@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'features/map/view/map_page.dart';
+import 'features/home/view/home_page.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: NextHarvestTheme.light(),
       darkTheme: NextHarvestTheme.dark(),
       themeMode: ThemeMode.system,
-      home: const MapPage(),
+      home: const HomePage(),
     );
   }
 }
