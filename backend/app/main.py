@@ -2,6 +2,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     app.state.db_ok = False
     app.state.redis = None
+    app.state.http_client = httpx.AsyncClient(timeout=30.0)
     try:
         await init_db()
         app.state.db_ok = True
@@ -38,6 +40,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     redis_client: Redis | None = app.state.redis
     if redis_client is not None:
         await redis_client.aclose()
+    http_client = getattr(app.state, "http_client", None)
+    if http_client is not None:
+        await http_client.aclose()
     await engine.dispose()
 
 
@@ -46,7 +51,7 @@ app = FastAPI(
     version="0.1.0",
     description=(
         "Apoio à decisão de rotação de culturas com dados NASA e USDA. "
-        "Nesta fase as rotas devolvem contratos válidos com dados placeholder."
+        "POST /fields/analyze persiste o talhão e monta clima (POWER) + solo (SSURGO)."
     ),
     lifespan=lifespan,
 )
