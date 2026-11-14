@@ -1,4 +1,4 @@
-﻿# next_harvest_frontend
+# next_harvest_frontend
 
 A new Flutter project.
 
@@ -10,6 +10,7 @@ antes da criação do `ProviderScope`. O `dioProvider` utiliza essa URL.
 
 ```dotenv
 API_BASE_URL=http://localhost:8000
+AREA_CREATE_PATH=/api/v1/fields/analyze
 ```
 
 No emulador Android, use `http://10.0.2.2:8000` para acessar o backend na máquina
@@ -17,6 +18,57 @@ de desenvolvimento. Após alterar o `.env`, reinicie o app. Em novos checkouts e
 no CI, crie o `.env` antes de executar testes ou builds, pois ele é um asset.
 
 Use o arquivo para configurações públicas do cliente, como a URL da API.
+
+## Desenhar e enviar uma área
+
+No mapa, escolha **Desenhar área**. Cada toque adiciona um vértice; tocar em um
+vértice abre a opção de exclusão. Arrastar um vértice move somente esse ponto.
+O preenchimento é amarelo com opacidade de 50%. A linha tracejada antecipa o
+fechamento enquanto o desenho ainda está aberto.
+
+Para fechar, toque no primeiro ponto e escolha **Fechar área**, ou use o botão
+de fechar. São necessários três vértices distintos, área não nula e contorno
+sem cruzamentos ou sobreposição de arestas. Depois informe nome e cultura atual
+no formulário e escolha **Enviar área**. Editar um contorno fechado o reabre;
+é preciso fechá-lo novamente antes do envio.
+
+O POST usa `API_BASE_URL` e `AREA_CREATE_PATH`, configurado como `/api/v1/fields/analyze`. O Android debug
+permite HTTP para o backend de desenvolvimento; a variante release não foi
+alterada. Após alterar o manifest, reinicie a execução do app.
+
+O corpo segue exatamente a estrutura solicitada:
+
+```json
+{
+  "current_crop": "Alfafa",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[
+      [-118.78, 39.47], [-118.77, 39.47], [-118.77, 39.48],
+      [-118.78, 39.48], [-118.78, 39.47]
+    ]]
+  },
+  "name": "Alfafa Nevada"
+}
+```
+
+As coordenadas são WGS84, em longitude/latitude, com o primeiro ponto repetido
+uma única vez no fim do anel. O anel externo é normalizado em sentido
+anti-horário. O editor não mantém um vértice duplicado de fechamento. Uma área
+contém um único polígono, sem buracos. Nenhuma requisição de envio acontece ao
+adicionar, arrastar, excluir ou apenas fechar os pontos; o envio ocorre após o
+formulário de um polígono válido e fechado. Durante o envio, edições e envios
+duplicados são bloqueados. Em falha, desenho, nome e cultura são preservados.
+
+O sucesso indica que a API recebeu a requisição com resposta 2xx; o frontend
+não presume armazenamento local nem apresenta a análise agronômica retornada
+nesta etapa. A resposta HTTP permanece disponível nos logs Dio em debug.
+
+A feature `lib/features/areas/` segue MVVM + Repository + Dio + Riverpod, com
+models, state, providers, viewmodel, view e contrato/implementação de repository.
+Os testes cobrem o payload, validação geométrica, envio somente depois de
+fechado, bloqueio de duplicação, recuperação de falhas, toques e arraste no mapa
+e formulário. O teste HTTP usa um adapter controlado e não cria áreas reais.
 
 ## Mapa com imagem aérea e Sentinel-2
 

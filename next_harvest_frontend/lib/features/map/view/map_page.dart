@@ -12,6 +12,14 @@ import '../services/map_tile_provider.dart';
 import '../state/map_state.dart';
 import '../state/map_status.dart';
 import 'map_references_overlay.dart';
+import '../../areas/models/area_vertex.dart';
+import '../../areas/providers/area_draft_viewmodel_provider.dart';
+import '../../areas/state/area_draft_status.dart';
+import '../../areas/view/area_details_sheet.dart';
+import '../../areas/view/area_drawing_controls.dart';
+import '../../areas/view/area_drawing_layer.dart';
+
+enum _AreaVertexAction { delete, close }
 
 class MapPage extends ConsumerStatefulWidget {
   const MapPage({super.key});
@@ -47,8 +55,73 @@ class _MapPageState extends ConsumerState<MapPage> {
     );
   }
 
+  Future<void> _showAreaDetails() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
+    builder: (_) => const AreaDetailsSheet(),
+  );
+
+  Future<void> _closeArea() async {
+    if (ref.read(areaDraftViewModelProvider.notifier).closePolygon()) {
+      await _showAreaDetails();
+    }
+  }
+
+  Future<void> _onVertexTap(AreaVertex vertex) async {
+    final draft = ref.read(areaDraftViewModelProvider);
+    if (!draft.isEditable) return;
+    final canClose =
+        draft.status == AreaDraftStatus.drawing &&
+        draft.vertices.length >= 3 &&
+        draft.vertices.first.id == vertex.id;
+    final action = await showModalBottomSheet<_AreaVertexAction>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (canClose)
+              ListTile(
+                leading: const Icon(Icons.check_circle_outline),
+                title: const Text('Fechar área'),
+                onTap: () => Navigator.pop(context, _AreaVertexAction.close),
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Excluir ponto'),
+              onTap: () => Navigator.pop(context, _AreaVertexAction.delete),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == _AreaVertexAction.delete) {
+      ref.read(areaDraftViewModelProvider.notifier).removeVertex(vertex.id);
+    } else if (action == _AreaVertexAction.close) {
+      await _closeArea();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(areaDraftViewModelProvider, (previous, next) {
+      if (next.status == AreaDraftStatus.drawing &&
+          next.error != null &&
+          previous?.error != next.error) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.error!)));
+      }
+      if (previous?.status != AreaDraftStatus.saved &&
+          next.status == AreaDraftStatus.saved) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Área enviada com sucesso.')),
+        );
+      }
+    });
     ref.listen(mapViewModelProvider, (previous, next) {
       if (previous?.layer == null ||
           next.layer == null ||
@@ -131,6 +204,9 @@ class _MapPageState extends ConsumerState<MapPage> {
             maxZoom: layer.maxNativeZoom.toDouble(),
             cameraConstraint: CameraConstraint.containCenter(bounds: bounds),
             backgroundColor: colors.surfaceContainerHighest,
+            onTap: (_, point) => ref
+                .read(areaDraftViewModelProvider.notifier)
+                .addVertex(point.latitude, point.longitude),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
@@ -175,14 +251,27 @@ class _MapPageState extends ConsumerState<MapPage> {
                     .read(mapViewModelProvider.notifier)
                     .reportReferenceError(state.referenceRevision),
               ),
+            AreaDrawingLayer(
+              mapController: _mapController,
+              onVertexTap: _onVertexTap,
+            ),
           ],
+        ),
+        Positioned(
+          top: 12,
+          left: 12,
+          right: 76,
+          child: AreaDrawingControls(
+            onClose: _closeArea,
+            onSave: _showAreaDetails,
+          ),
         ),
         if (state.referencesVisible &&
             state.referenceError != null &&
             !state.isSwitching)
           Positioned(
-            top: 12,
-            left: 12,
+            top: 72,
+            right: 12,
             child: IconButton.filledTonal(
               tooltip: 'Recarregar nomes e limites',
               onPressed: () =>
@@ -250,7 +339,7 @@ class _MapPageState extends ConsumerState<MapPage> {
         if (state.isSwitching)
           const Positioned(
             top: 16,
-            left: 16,
+            right: 72,
             child: CircularProgressIndicator(),
           ),
         if (state.tileError != null || state.error != null)
