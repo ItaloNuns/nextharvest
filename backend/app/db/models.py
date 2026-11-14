@@ -21,6 +21,7 @@ class Field(Base):
         Geometry(geometry_type="POLYGON", srid=4326),
         nullable=False,
     )
+    last_summary: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class Simulation(Base):

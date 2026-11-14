@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     )
 
     database_url: str = (
-        "postgresql+asyncpg://nextharvest:nextharvest@localhost:5432/nextharvest"
+        "postgresql+asyncpg://nextharvest:nextharvest@127.0.0.1:5433/nextharvest"
     )
     redis_url: str = "redis://localhost:6379/0"
     nasa_earthdata_username: str = ""
