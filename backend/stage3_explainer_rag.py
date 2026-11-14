@@ -2,6 +2,9 @@ import json
 import os
 import httpx
 from pydantic import BaseModel
+from stage1_features import _load_dotenv
+
+_load_dotenv()
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 

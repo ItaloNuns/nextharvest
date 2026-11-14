@@ -1,4 +1,23 @@
+from collections import defaultdict
 from math import sqrt
+import os
+import httpx
+from stage1_features import _load_dotenv
+
+_load_dotenv()
+
+NASS_URL = "https://quickstats.nass.usda.gov/api/api_GET/"
+NASS_COMMODITY_MAP = {
+    "alfalfa": "HAY",
+    "corn": "CORN",
+    "soybeans": "SOYBEANS",
+    "sorghum": "SORGHUM",
+    "winter_wheat": "WHEAT",
+    "chickpea": "CHICKPEAS",
+    "sunflower": "SUNFLOWER",
+    "canola": "CANOLA",
+    "oats": "OATS",
+}
 
 METRICS = (
     "water_efficiency_score",
@@ -37,6 +56,47 @@ CANDIDATE_SEQUENCES = [
 
 def has_valid_family_succession(seq: tuple[str, ...]) -> bool:
     return all(CROPS[seq[i]]["family"] != CROPS[seq[i + 1]]["family"] for i in range(len(seq) - 1))
+
+
+def fetch_nass_crop_scores(
+    state_alpha: str = "NV",
+    start_year: int = 2020,
+    api_key: str | None = None,
+) -> dict[str, float]:
+    """Fetch state/county historical yield records from USDA NASS QuickStats and compute market/viability overrides."""
+    key = api_key or os.getenv("NASS_API_KEY")
+    if not key:
+        return {}
+    params = {
+        "key": key,
+        "state_alpha": state_alpha.upper(),
+        "statisticcat_desc": "YIELD",
+        "year__GE": start_year,
+        "format": "JSON",
+    }
+    r = httpx.get(NASS_URL, params=params, timeout=30)
+    r.raise_for_status()
+    inv_map = defaultdict(list)
+    for code, comm in NASS_COMMODITY_MAP.items():
+        inv_map[comm].append(code)
+
+    counts = defaultdict(int)
+    for row in r.json().get("data", []):
+        val_str = str(row.get("Value", "")).replace(",", "").strip()
+        try:
+            float(val_str)
+        except ValueError:
+            continue
+        for code in inv_map.get(row.get("commodity_desc", ""), []):
+            counts[code] += 1
+
+    if not counts:
+        return {}
+    max_c = max(counts.values())
+    return {
+        code: round(60.0 + 38.0 * (cnt / max_c), 1)
+        for code, cnt in counts.items()
+    }
 
 
 def score_sequence(seq: tuple[str, ...], stage1: dict, market_overrides: dict[str, float] | None = None) -> dict[str, int]:
@@ -123,6 +183,7 @@ def recommend_rotations(
     current_sequence: list[str],
     stage1: dict,
     farmer_weights: dict[str, float] | None = None,
+    market_overrides: dict[str, float] | None = None,
     field_area_ha: float = 25.0,
     cloud_cover_pct: float = 15.0,
     has_local_soil_lab: bool = False,
@@ -134,7 +195,7 @@ def recommend_rotations(
         "is_baseline": True,
         "codes": list(base_seq),
         "sequence": [CROPS[c]["name"] for c in base_seq],
-        "metrics_radar": score_sequence(base_seq, stage1),
+        "metrics_radar": score_sequence(base_seq, stage1, market_overrides),
         "topsis_score": 0.0,
     }
 
@@ -142,7 +203,7 @@ def recommend_rotations(
         {
             "codes": list(seq),
             "sequence": [CROPS[c]["name"] for c in seq],
-            "metrics_radar": score_sequence(seq, stage1),
+            "metrics_radar": score_sequence(seq, stage1, market_overrides),
         }
         for seq in CANDIDATE_SEQUENCES
         if seq != base_seq and has_valid_family_succession(seq)
