@@ -25,6 +25,24 @@ async def init_db() -> None:
         await conn.execute(
             text("ALTER TABLE fields ADD COLUMN IF NOT EXISTS last_summary jsonb")
         )
+        await conn.execute(
+            text("ALTER TABLE fields ADD COLUMN IF NOT EXISTS user_id VARCHAR(64)")
+        )
+        await conn.execute(
+            text(
+                """
+                DO $$ BEGIN
+                  ALTER TABLE fields
+                    ADD CONSTRAINT fields_user_id_fkey
+                    FOREIGN KEY (user_id) REFERENCES users(id);
+                EXCEPTION
+                  WHEN duplicate_object THEN NULL;
+                  WHEN undefined_object THEN NULL;
+                  WHEN undefined_table THEN NULL;
+                END $$;
+                """
+            )
+        )
     logger.info("PostGIS schema ready")
 
 

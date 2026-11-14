@@ -9,6 +9,7 @@ from tests.conftest import POWER_JSON, live_enabled
 def test_summarize_power_payload_sums_precip_and_skips_fill() -> None:
     summary = summarize_power_payload(POWER_JSON)
     assert summary["annual_precip_mm"] == 15.0
+    assert summary["annual_et_mm"] == 30.0
     assert summary["mean_gwetroot"] == 0.5
     assert summary["mean_t2m"] == 13.0
     assert summary["sample_days"] == 2

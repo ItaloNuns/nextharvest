@@ -50,8 +50,10 @@ app = FastAPI(
     title="NextHarvest API",
     version="0.1.0",
     description=(
-        "Apoio à decisão de rotação de culturas com dados NASA e USDA. "
-        "POST /fields/analyze persiste o talhão e monta clima (POWER) + solo (SSURGO)."
+        "Decision support for crop rotation using NASA and USDA data. "
+        "Register and log in at /auth, then Authorize in Swagger. "
+        "POST /fields/analyze persists the field (POWER + SSURGO + OpenET). "
+        "POST /rotations/recommend returns 3 strategies; POST /rotations/simulate applies sliders."
     ),
     lifespan=lifespan,
 )

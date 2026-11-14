@@ -1,7 +1,10 @@
 from typing import Any
 
-from shapely.geometry import shape
+from pyproj import Geod
+from shapely.geometry import mapping, shape
 from shapely.geometry.base import BaseGeometry
+
+_GEOD = Geod(ellps="WGS84")
 
 
 class InvalidFieldGeometry(ValueError):
@@ -38,3 +41,28 @@ def centroid(geometry: dict[str, Any]) -> tuple[float, float]:
 def to_wkt(geometry: dict[str, Any]) -> str:
     """Return WGS84 WKT with longitude/latitude order."""
     return _shapely_polygon(geometry).wkt
+
+
+def flatten_lonlat_ring(geometry: dict[str, Any]) -> list[float]:
+    """Outer ring as [lon, lat, lon, lat, ...] for OpenET polygon queries."""
+    ring = as_polygon(geometry)["coordinates"][0]
+    coords: list[float] = []
+    for point in ring:
+        coords.append(float(point[0]))
+        coords.append(float(point[1]))
+    return coords
+
+
+def area_ha(geometry: dict[str, Any]) -> float:
+    """Geodesic area of the polygon in hectares."""
+    meters, _ = _GEOD.geometry_area_perimeter(_shapely_polygon(geometry))
+    return abs(meters) / 10_000.0
+
+
+def db_geometry_to_geojson(geom: Any) -> dict[str, Any]:
+    """Convert a PostGIS / GeoAlchemy geometry to a GeoJSON polygon dict."""
+    if isinstance(geom, dict):
+        return as_polygon(geom) if geom.get("type") in {"Polygon", "Feature"} else geom
+    from geoalchemy2.shape import to_shape
+
+    return mapping(to_shape(geom))

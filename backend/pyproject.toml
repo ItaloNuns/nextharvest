@@ -18,6 +18,8 @@ dependencies = [
     "xarray>=2024.9",
     "shapely>=2.0",
     "pyproj>=3.7",
+    "bcrypt>=4.2",
+    "PyJWT>=2.9",
 ]
 
 [build-system]
@@ -41,5 +43,5 @@ asyncio_default_fixture_loop_scope = "function"
 pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
-    "live: calls NASA POWER or USDA SDA (set NEXTHARVEST_LIVE=1)",
+    "live: calls NASA POWER, USDA SDA or OpenET (set NEXTHARVEST_LIVE=1)",
 ]
