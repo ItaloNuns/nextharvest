@@ -39,13 +39,14 @@ flowchart TB
     subgraph APILayer["2. Camada de API (FastAPI REST + WebSockets/SSE)"]
         GW["API Gateway / FastAPI Router (/api/v1/*)"]
         Schema["Validação de Contratos Pydantic v2 & OpenAPI 3.1"]
-        AuthRate["Controle de Sessão, Cache HTTP (Redis) & Tarefas Assíncronas"]
+        JWTAuth["JWT Auth implementado: register, login, me, Bearer"]
+        RedisFuture["Redis cache/filas planejado (healthcheck hoje)"]
     end
 
     subgraph Backend["3. Backend & Motor de Fusão Geoespacial (Python)"]
         Connectors["Adaptadores Assíncronos (httpx): NASA POWER, AppEEARS, OpenET, USDA SDA, NASS, AMS, CDSE"]
         Harmonizer["Harmonizador Espaço-Temporal (Grade Comum 30m / H3 + xarray / GeoPandas)"]
-        DB[("PostgreSQL + PostGIS (Talhões, Solos, Grades) & Redis (Cache de Séries)")]
+        DB[("PostgreSQL + PostGIS users, fields, simulations; Redis futuro")]
     end
 
     subgraph AIEngine["4. Motor Híbrido de IA / Inteligência Sintética (SI)"]
@@ -54,7 +55,7 @@ flowchart TB
         LLMRag["Estágio 3: Agente Explicável (Gemini API + RAG Agronômico + Structured Outputs)"]
     end
 
-    Mobile <-->|"HTTPS / JSON / GeoJSON"| APILayer
+    Mobile <-->|"HTTPS / JSON / GeoJSON + Bearer em talhão/rotações"| APILayer
     APILayer <--> Backend
     Backend <--> AIEngine
     Connectors --> Harmonizer
@@ -63,6 +64,20 @@ flowchart TB
     FeatEng --> MCDA
     MCDA --> LLMRag
 ```
+
+### 2.1. Implementado no repositório (`backend/`) vs planejado
+
+O diagrama acima mistura **visão de produto** (grade 30 m, RAG Gemini) com o **MVP já no código**. Para integração entre devs:
+
+| Área | Status atual (código) |
+| :--- | :--- |
+| Auth JWT + bcrypt | Tabela `users`; `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
+| Ownership | `fields.user_id` — só o dono acessa analyze, diagnostics, recommend, simulate |
+| Fluxo MVP | Register/login → Analyze → Recommend → Simulate (reenviar `priorities`) |
+| Público | `GET /health`, `GET /glossary/explain` |
+| Ainda planejado | Sessão/cache Redis, refresh token, verificação de e-mail, AMS/Gemini/SMAP reais, grade 30 m |
+
+Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção **Auth**).
 
 ---
 
@@ -73,6 +88,11 @@ flowchart TB
 * **Design System:** Interface de alto contraste (legível sob luz solar direta no campo), linguagem visual intuitiva com semáforos de risco, ícones agronômicos claros e zero jargão técnico obrigatório na primeira camada de leitura.
 
 ### 3.2. Arquitetura de Telas e Fluxo de Usuário
+0. **Tela 0 — Conta do produtor (*Auth*):**
+   * Register / Login (`POST /api/v1/auth/register` ou `/login`) → guardar `access_token` em *secure storage* (Keychain / Keystore).
+   * Enviar `Authorization: Bearer <access_token>` em **analyze**, **diagnostics**, **recommend** e **simulate**.
+   * `GET /api/v1/fields/` recupera a lista de talhões do usuário (útil em novo aparelho ou após reinstalar o app).
+   * O mesmo objeto `priorities` dos sliders deve ir no **Recommend** e de novo no **Simulate** (ver [backend/README.md](backend/README.md)).
 1. **Tela 1 — Cadastro e Demarcação do Talhão (*Field Setup*):**
    * O produtor usa o GPS do celular ou desenha os vértices do talhão sobre a imagem aérea de 1 metro (**USDA NAIP** / satélite).
    * O app detecta automaticamente a cultura atual e o histórico dos últimos 5 anos (via **USDA CDL** ou seleção manual, ex.: *Alfafa contínua* ou *Milho → Soja*).
@@ -109,8 +129,9 @@ flowchart TB
 
 ### 4.1. Stack Tecnológica do Backend
 * **Linguagem & Framework:** **Python 3.12+** com **FastAPI** + **Pydantic v2** + **SQLAlchemy 2.0 (Async)**.
-* **Banco de Dados Principal:** **PostgreSQL 16 + PostGIS** (armazena polígonos dos talhões, unidades de solo SSURGO, catálogo de parâmetros agronômicos das culturas e resultados de simulações).
-* **Cache & Fila:** **Redis** (cache de respostas das APIs da NASA/USDA por coordenada/polígono para resposta sub-segundo durante a apresentação).
+* **Banco de Dados Principal:** **PostgreSQL 16 + PostGIS** — tabelas **`users`**, **`fields`** (polígono, `last_summary` JSONB, `user_id` FK) e **`simulations`** (histórico de sliders). Relações ORM: **User 1:N Field**, **Field 1:N Simulation**. Schema evolui via `init_db` + `ALTER ... IF NOT EXISTS` (sem Alembic no MVP).
+* **Autenticação:** **JWT (HS256)** + **bcrypt**; variáveis `JWT_SECRET` e `JWT_EXPIRE_MINUTES` em `.env` (ver [backend/.env.example](backend/.env.example)).
+* **Cache & Fila:** **Redis** — *planejado* para cache NASA/USDA; hoje só `ping` no `/health` (sem store de sessão JWT).
 * **Processamento Científico e Geoespacial:** `numpy`, `pandas`, `xarray`, `shapely`, `pyproj` e `httpx` (requisições assíncronas em paralelo para todas as APIs externas).
 
 ### 4.2. Como Implementar a Harmonização de Resolução (*Common Analysis Grid*)
@@ -138,37 +159,51 @@ No **NextHarvest**, o `GeoHarmonizerService` executa a fusão em duas dimensões
 backend/
 ├── app/
 │   ├── main.py                  # Inicialização FastAPI, CORS, Lifespan
-│   ├── config.py                # Variáveis de ambiente e chaves de API
+│   ├── config.py                # Variáveis de ambiente, chaves de API, JWT
+│   ├── db/
+│   │   ├── models.py            # User, Field, Simulation (ORM)
+│   │   └── session.py           # init_db, PostGIS, SessionLocal
 │   ├── api/
 │   │   └── v1/
-│   │       ├── fields.py        # CRUD de talhões e demarcação GeoJSON
-│   │       ├── diagnostics.py   # Séries temporais harmonizadas NASA/USDA
+│   │       ├── auth.py          # register, login, me
+│   │       ├── fields.py        # list + analyze (GeoJSON, user_id)
+│   │       ├── diagnostics.py   # Resumo persistido por talhão (dono)
 │   │       ├── rotations.py     # Geração e comparação de >= 3 rotações
 │   │       ├── simulator.py     # Simulação de cenários climáticos (Sliders)
-│   │       └── assistant.py     # Chat/Explicador de termos científicos (RAG)
+│   │       └── assistant.py     # Glossário de termos (RAG/Gemini planejado)
 │   ├── connectors/              # Adaptadores assíncronos para dados externos
 │   │   ├── nasa_power.py        # Clima, radiação, geada e umidade (JSON direto)
-│   │   ├── nasa_appeears.py     # SMAP, MODIS, VIIRS, ECOSTRESS, SRTM
+│   │   ├── nasa_appeears.py     # SMAP, MODIS, VIIRS, ECOSTRESS, SRTM (stub)
 │   │   ├── usda_sda_soils.py    # SSURGO/WSS via SQL/REST (textura, MO, pH, AWC)
-│   │   ├── usda_crops_market.py # CDL CropScape, NASS QuickStats & AMS Market News
-│   │   ├── openet_client.py     # Evapotranspiração de talhão (30m)
+│   │   ├── usda_crops_market.py # NASS QuickStats (+ AMS planejado)
+│   │   ├── openet_client.py     # Evapotranspiração de talhão
 │   │   └── copernicus_cdse.py   # Sentinel-2 Statistical API (NDVI, NDRE, Bare Soil)
 │   ├── services/
-│   │   ├── harmonizer.py        # Fusão espaço-temporal na grade comum
+│   │   ├── auth.py              # JWT, bcrypt, get_current_user
+│   │   ├── field_lookup.py      # require_owned_field / require_analyzed_field
+│   │   ├── harmonizer.py        # Fusão POWER + SSURGO + OpenET (MVP talhão)
 │   │   ├── rotation_engine.py   # Motor MCDA + Regras Agronômicas
-│   │   └── ai_explainer.py      # Agente LLM (Gemini) com saída estruturada
+│   │   └── ai_explainer.py      # Agente LLM (Gemini) — stub
 │   └── schemas/
-│       └── rotation_models.py   # Contratos Pydantic (Request/Response)
+│       ├── rotation_models.py   # Contratos talhão/rotação
+│       └── auth_models.py       # Register, Login, TokenResponse
 ```
 
 ### 5.2. Principais Endpoints da API REST (`/api/v1`)
 
-| Método e Rota | Descrição | Fontes Acionadas no Backend |
-| :--- | :--- | :--- |
-| `POST /api/v1/fields/analyze` | Recebe o polígono GeoJSON do talhão + cultura atual e retorna o diagnóstico completo de solo, relevo, clima histórico e janelas de solo exposto. | NASA POWER, USDA SDA (SSURGO), SRTM, USDA CDL, Sentinel-2 / MODIS, SMAP, OpenET. |
-| `POST /api/v1/rotations/recommend` | Recebe o `field_id` + pesos das prioridades do produtor e retorna **$\ge 3$ estratégias de rotação** com scores quantitativos e explicação completa nos 5 critérios do desafio. | Motor de Fusão + Catálogo FAO GAEZ + USDA NASS/AMS + Motor MCDA + Agente IA. |
-| `POST /api/v1/rotations/simulate` | Recalcula em tempo real os indicadores hídricos, térmicos e de risco das 3 rotações aplicando deltas dos *Scenario Sliders* ($\Delta \text{Chuva}\%$, $\Delta \text{Temp}^\circ\text{C}$). | Simulador Biofísico Rápido (em memória / cache Redis). |
-| `GET /api/v1/glossary/explain` | Retorna a explicação acessível (com analogias práticas de fazenda) de termos como `NDVI`, `Evapotranspiração`, `SMAP Anomaly`, `Grupo Hidrológico`, além da diferença Satélite vs. Solo. | Base de Conhecimento Agronômico + LLM. |
+| Método e Rota | Auth | Descrição (MVP implementado) | Fontes / motor |
+| :--- | :--- | :--- | :--- |
+| `POST /api/v1/auth/register` | Público | Cadastro e-mail + senha; devolve JWT. | PostgreSQL `users` |
+| `POST /api/v1/auth/login` | Público | Login; devolve JWT. | PostgreSQL `users` |
+| `GET /api/v1/auth/me` | Bearer | Usuário do token. | JWT |
+| `GET /api/v1/fields/` | Bearer | Lista talhões do usuário (`id`, `name`, `current_crop`). | PostgreSQL |
+| `POST /api/v1/fields/analyze` | Bearer | GeoJSON + cultura; diagnóstico harmonizado; persiste com `user_id`. | NASA POWER, SSURGO (SDA), OpenET (opcional) |
+| `GET /api/v1/diagnostics/{field_id}` | Bearer (dono) | Resumo gravado na última análise. | Dados persistidos |
+| `POST /api/v1/rotations/recommend` | Bearer + `priorities` | **3 estratégias** + explicações estruturadas. | Diagnóstico salvo, FCC condado, NASS (opcional), `RotationEngine` |
+| `POST /api/v1/rotations/simulate` | Bearer | Recálculo em memória com $\Delta$ chuva/temp.; `priorities` opcional na API (demo). | `RotationEngine` + sliders |
+| `GET /api/v1/glossary/explain` | Público | Glossário estático (RAG/LLM planejado). | Textos locais |
+
+*Roadmap de fontes ainda não ligadas no analyze de produção:* SMAP, CDL, Sentinel/MODIS série temporal, AMS — permanecem na visão de fusão (seções 4.2 e 6).
 
 ### 5.3. Exemplo de Contrato JSON de Saída (`POST /api/v1/rotations/recommend`)
 Este contrato garante 100% de aderência aos critérios de avaliação dos juízes da NASA:
@@ -264,6 +299,33 @@ Este contrato garante 100% de aderência aos critérios de avaliação dos juíz
 }
 ```
 
+### 5.4. Autenticação e isolamento por produtor (implementado)
+
+Cada talhão pertence a um usuário (`fields.user_id`). Rotas de campo e rotação exigem **JWT** no header `Authorization: Bearer <access_token>`.
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Auth
+    participant Fields
+    App->>Auth: POST_register_or_login
+    Auth-->>App: access_token
+    App->>Fields: POST_analyze_Bearer
+    Fields-->>App: field_id
+    App->>Fields: POST_recommend_Bearer_field_id
+```
+
+| Aspecto | Comportamento |
+| :--- | :--- |
+| Token | HS256; claim `sub` = id `usr_*`; expiração via `JWT_EXPIRE_MINUTES` |
+| Senha | bcrypt no cadastro |
+| Acesso cruzado | `field_id` de outro usuário → **404** (não revela existência) |
+| Legado | Talhões sem `user_id` (pré-auth) ficam invisíveis após deploy da feat |
+| Swagger | `POST /auth/login` → **Authorize** com o token → demais rotas |
+| Fora do MVP | Refresh token, OAuth, papéis (admin), sessão em Redis |
+
+**Código de referência:** [`backend/app/services/auth.py`](backend/app/services/auth.py) (`get_current_user`), [`backend/app/services/field_lookup.py`](backend/app/services/field_lookup.py) (`require_owned_field`, `require_analyzed_field`), [`backend/app/api/v1/auth.py`](backend/app/api/v1/auth.py).
+
 ---
 
 ## 6. Pilar 4: Arquitetura de IA / Inteligência Sintética (SI) para Análise dos Dados
@@ -333,10 +395,12 @@ A partir do cubo harmonizado de dados da NASA/USDA do talhão, o Estágio 1 calc
 ## 7. Roteiro Sugerido de Implementação para o Hackathon (MVP Enxuto e Funcional)
 
 > [!TIP]
-> Para entregar um protótipo funcional, rápido e visualmente impressionante dentro do repositório `c:\projects\nextharvest`:
-> 1. **Backend (`backend/`):** Implementar em **FastAPI** com 4 conectores reais que funcionam instantaneamente por coordenada `(lat, lon)` sem exigir download de arquivos pesados:
->    * **NASA POWER API** (Clima diário/mensal, geada, radiação e umidade radicular `GWETROOT` em JSON);
->    * **USDA Soil Data Access (SDA) REST/SQL API** (Propriedades reais do solo SSURGO da fazenda em JSON);
->    * **USDA NASS QuickStats / CropScape API** (Culturas e produtividade histórica do condado);
->    * **Motor de IA (Python + Gemini API)** para calcular os indicadores biofísicos, simular os *Scenario Sliders* e gerar a comparação estruturada das $\ge 3$ estratégias de rotação.
-> 2. **Frontend/Mobile (`frontend/`):** Construir o app multiplataforma (em **Flutter** ou **Flet**) com o mapa interativo do talhão, os controles de prioridade do produtor, a linha do tempo de solo exposto/estresse hídrico, os *sliders* de simulação climática e os cartões comparativos das 3 rotações.
+> Para entregar um protótipo funcional, rápido e visualmente impressionante dentro do repositório `nextharvest`:
+> 1. **Backend (`backend/`) — já no código (MVP):**
+>    * **NASA POWER**, **USDA SDA (SSURGO)**, **OpenET** (opcional), **FCC Census** + **NASS** (opcional) no fluxo Analyze → Recommend;
+>    * **JWT + ownership** (`users`, `fields.user_id`), testes `pytest` incluindo `test_auth.py`;
+>    * **Simulate** com sliders de chuva/temperatura em memória.
+>    * *Próximo backend:* Gemini/RAG nas explicações, AMS, SMAP/AppEEARS, cache Redis.
+> 2. **Frontend/Mobile (`next_harvest_frontend/` ou `frontend/`):**
+>    * **Próximo passo imediato:** Tela de login/register + interceptor HTTP com Bearer; depois mapa do talhão, prioridades, comparador e sliders (seção 3.2).
+>    * Reutilizar contratos em [backend/README.md](backend/README.md) e exemplos OpenAPI em `/docs`.
