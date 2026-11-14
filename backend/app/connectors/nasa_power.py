@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 
 FILL_VALUE = -999.0
-PARAMETERS = "PRECTOTCORR,T2M,T2M_MIN,T2M_MAX,GWETROOT"
+PARAMETERS = "PRECTOTCORR,T2M,T2M_MIN,T2M_MAX,GWETROOT,EVPTRNS"
 
 
 class NasaPowerError(RuntimeError):
@@ -15,6 +15,15 @@ def default_date_range(today: date | None = None) -> tuple[str, str]:
     end = today or date.today()
     start = end - timedelta(days=365)
     return start.strftime("%Y%m%d"), end.strftime("%Y%m%d")
+
+
+def yyyymmdd_to_iso(value: str) -> str:
+    return f"{value[:4]}-{value[4:6]}-{value[6:8]}"
+
+
+def default_iso_date_range(today: date | None = None) -> tuple[str, str]:
+    start, end = default_date_range(today)
+    return yyyymmdd_to_iso(start), yyyymmdd_to_iso(end)
 
 
 def _numeric_series(values: dict[str, Any], fill: float) -> list[float]:
@@ -36,8 +45,10 @@ def summarize_power_payload(payload: dict[str, Any]) -> dict[str, Any]:
     precip = _numeric_series(parameters.get("PRECTOTCORR") or {}, fill)
     gwet = _numeric_series(parameters.get("GWETROOT") or {}, fill)
     t2m = _numeric_series(parameters.get("T2M") or {}, fill)
+    et = _numeric_series(parameters.get("EVPTRNS") or {}, fill)
     return {
         "annual_precip_mm": round(sum(precip), 2),
+        "annual_et_mm": round(sum(et), 2),
         "mean_gwetroot": round(sum(gwet) / len(gwet), 4) if gwet else None,
         "mean_t2m": round(sum(t2m) / len(t2m), 2) if t2m else None,
         "sample_days": len(precip),

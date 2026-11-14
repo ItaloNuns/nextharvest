@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     ams_api_key: str = ""
     openet_api_key: str = ""
     gemini_api_key: str = ""
+    jwt_secret: str = "nextharvest-dev-secret-change-me"
+    jwt_expire_minutes: int = 10080
 
 
 @lru_cache

@@ -1,23 +1,24 @@
-from fastapi import APIRouter, HTTPException, Request
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Request
 
-from app.db.models import Field
-from app.db.session import SessionLocal
+from app.db.models import User
 from app.schemas.rotation_models import DiagnosticsResponse, HarmonizedSummary, empty_summary
+from app.services.auth import get_current_user
+from app.services.field_lookup import require_owned_field
 
 router = APIRouter()
 
 
-@router.get("/{field_id}", response_model=DiagnosticsResponse)
-async def field_diagnostics(field_id: str, request: Request) -> DiagnosticsResponse:
-    if not getattr(request.app.state, "db_ok", False):
-        raise HTTPException(status_code=503, detail="Database unavailable")
-
-    async with SessionLocal() as session:
-        field = await session.scalar(select(Field).where(Field.id == field_id))
-
-    if field is None:
-        raise HTTPException(status_code=404, detail=f"Unknown field_id: {field_id}")
+@router.get(
+    "/{field_id}",
+    response_model=DiagnosticsResponse,
+    summary="Persisted diagnosis for an owned field",
+)
+async def field_diagnostics(
+    field_id: str,
+    request: Request,
+    user: User = Depends(get_current_user),
+) -> DiagnosticsResponse:
+    field = await require_owned_field(request, field_id, user)
 
     if field.last_summary:
         summary = HarmonizedSummary.model_validate(field.last_summary)

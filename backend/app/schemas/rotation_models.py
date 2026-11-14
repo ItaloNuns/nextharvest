@@ -69,13 +69,40 @@ class RotationRecommendation(BaseModel):
     strategies: list[RotationStrategy]
 
 
+DEMO_PRIORITIES_JSON: dict[str, object] = {
+    "water_savings": 5,
+    "soil_organic_matter": 3,
+    "erosion_control": 4,
+    "pest_cycle_break": 3,
+    "forage_value": 2,
+    "market_income": 3,
+    "has_irrigation": False,
+    "machinery": [],
+}
+
+RECOMMEND_BODY_EXAMPLE: dict[str, object] = {
+    "field_id": "fld_cole_o_id_do_analyze",
+    "priorities": DEMO_PRIORITIES_JSON,
+}
+
+SIMULATE_BODY_EXAMPLE: dict[str, object] = {
+    **RECOMMEND_BODY_EXAMPLE,
+    "delta_precip_pct": -25,
+    "delta_temp_c": 2,
+}
+
+
+def demo_farmer_priorities() -> "FarmerPriorities":
+    return FarmerPriorities.model_validate(DEMO_PRIORITIES_JSON)
+
+
 class FarmerPriorities(BaseModel):
-    water_savings: int = Field(ge=0, le=5)
-    soil_organic_matter: int = Field(ge=0, le=5)
-    erosion_control: int = Field(ge=0, le=5)
-    pest_cycle_break: int = Field(ge=0, le=5)
-    forage_value: int = Field(ge=0, le=5)
-    market_income: int = Field(ge=0, le=5)
+    water_savings: int = Field(default=5, ge=0, le=5)
+    soil_organic_matter: int = Field(default=3, ge=0, le=5)
+    erosion_control: int = Field(default=4, ge=0, le=5)
+    pest_cycle_break: int = Field(default=3, ge=0, le=5)
+    forage_value: int = Field(default=2, ge=0, le=5)
+    market_income: int = Field(default=3, ge=0, le=5)
     has_irrigation: bool = False
     machinery: list[str] = Field(default_factory=list)
 
@@ -127,6 +154,12 @@ class FieldAnalyzeResponse(BaseModel):
     summary: HarmonizedSummary
 
 
+class FieldListItem(BaseModel):
+    id: str
+    name: str
+    current_crop: str
+
+
 class DiagnosticsResponse(BaseModel):
     field_id: str
     placeholder: bool = True
@@ -135,14 +168,42 @@ class DiagnosticsResponse(BaseModel):
 
 
 class RecommendRequest(BaseModel):
-    field_id: str = Field(min_length=1)
-    priorities: FarmerPriorities
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [RECOMMEND_BODY_EXAMPLE],
+        }
+    )
+
+    field_id: str = Field(min_length=1, description="ID retornado pelo POST /fields/analyze")
+    priorities: FarmerPriorities = Field(
+        description="Prioridades do produtor (sliders 0–5). Obrigatório no app; exemplo pré-preenchido no Swagger."
+    )
 
 
 class SimulationRequest(BaseModel):
-    field_id: str = Field(min_length=1)
-    delta_precip_pct: float = Field(ge=-30, le=30)
-    delta_temp_c: float = Field(ge=0, le=4)
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [SIMULATE_BODY_EXAMPLE],
+        }
+    )
+
+    field_id: str = Field(min_length=1, description="ID retornado pelo POST /fields/analyze")
+    delta_precip_pct: float = Field(
+        default=0,
+        ge=-30,
+        le=30,
+        description="Variação percentual na chuva anual (ex.: -25).",
+    )
+    delta_temp_c: float = Field(
+        default=0,
+        ge=0,
+        le=4,
+        description="Aumento de temperatura em °C para recálculo da ET (ex.: 2).",
+    )
+    priorities: FarmerPriorities = Field(
+        default_factory=demo_farmer_priorities,
+        description="Mesmas prioridades do Recommend; omitir na API usa o perfil demo Nevada.",
+    )
 
 
 class SimulationResponse(BaseModel):
