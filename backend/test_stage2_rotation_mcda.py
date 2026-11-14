@@ -1,5 +1,6 @@
 import pytest
 from stage2_rotation_mcda import (
+    fetch_nass_crop_scores,
     has_valid_family_succession,
     recommend_rotations,
     score_sequence,
@@ -36,3 +37,15 @@ def test_recommend_three_strategies_and_uncertainty():
 def test_unknown_crop_raises():
     with pytest.raises(ValueError):
         score_sequence(("unknown_crop",), {})
+
+
+def test_nass_no_key_and_market_overrides(monkeypatch):
+    monkeypatch.delenv("NASS_API_KEY", raising=False)
+    assert fetch_nass_crop_scores("NV", api_key=None) == {}
+
+    res = recommend_rotations(
+        current_sequence=["alfalfa"],
+        stage1={"crop_water_deficit_mm": {7: -50.0}, "bare_soil_months": []},
+        market_overrides={"alfalfa": 99.0},
+    )
+    assert res["strategies"][0]["metrics_radar"]["market_viability_score"] == 99

@@ -1,8 +1,24 @@
 from collections import defaultdict
+import os
+from pathlib import Path
 from statistics import mean, median, pstdev
 import httpx
 
+
+def _load_dotenv() -> None:
+    env_file = Path(__file__).with_name(".env")
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                if v.strip():
+                    os.environ.setdefault(k.strip(), v.strip())
+
+
+_load_dotenv()
+
 POWER_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
+OPENET_URL = "https://openet-api.org/raster/timeseries/point"
 
 
 def theil_sen_slope(years: list[int], values: list[float]) -> float:
@@ -32,9 +48,41 @@ def fetch_nasa_power_daily(lat: float, lon: float, start_year: int = 2005, end_y
     return r.json()["properties"]["parameter"]
 
 
+def fetch_openet_et(
+    lat: float,
+    lon: float,
+    start_year: int = 2021,
+    end_year: int = 2025,
+    api_key: str | None = None,
+) -> dict[int, float]:
+    """Fetch field-scale 30m monthly Ensemble ET (mm) from OpenET API v2.0."""
+    key = api_key or os.getenv("OPENET_API_KEY")
+    if not key:
+        return {}
+    payload = {
+        "date_range": [f"{start_year}-01-01", f"{end_year}-12-31"],
+        "interval": "monthly",
+        "geometry": [lon, lat],
+        "model": "Ensemble",
+        "variable": "ET",
+        "reference_et": "gridMET",
+        "units": "mm",
+        "file_format": "JSON",
+    }
+    r = httpx.post(OPENET_URL, json=payload, headers={"Authorization": key}, timeout=30)
+    r.raise_for_status()
+    by_month = defaultdict(list)
+    for row in r.json():
+        if row.get("et") is not None:
+            mo = int(str(row["time"])[5:7])
+            by_month[mo].append(float(row["et"]))
+    return {mo: round(mean(vals), 2) for mo, vals in by_month.items() if vals}
+
+
 def extract_stage1_features(
     power_params: dict[str, dict[str, float]],
     monthly_optical: dict[int, dict[str, float]] | None = None,
+    openet_monthly_mm: dict[int, float] | None = None,
     kwfact: float = 0.30,
     slope_pct: float = 2.0,
 ) -> dict:
@@ -81,7 +129,7 @@ def extract_stage1_features(
         sm_anomaly_z[mo] = round((cur_sm - mu) / sd, 2)
 
         avg_p = mean(month_p[mo].values())
-        avg_et = mean(month_et[mo].values())
+        avg_et = (openet_monthly_mm or {}).get(mo, mean(month_et[mo].values()))
         cwd_mm[mo] = round(avg_p - avg_et, 1)
 
         opt = (monthly_optical or {}).get(mo)

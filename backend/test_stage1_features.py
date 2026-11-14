@@ -1,5 +1,10 @@
 import pytest
-from stage1_features import extract_stage1_features, fetch_nasa_power_daily, theil_sen_slope
+from stage1_features import (
+    extract_stage1_features,
+    fetch_nasa_power_daily,
+    fetch_openet_et,
+    theil_sen_slope,
+)
 
 
 def test_theil_sen_slope():
@@ -33,3 +38,18 @@ def test_extract_stage1_features():
 def test_invalid_coordinates():
     with pytest.raises(ValueError):
         fetch_nasa_power_daily(95.0, 0.0)
+
+
+def test_openet_override_and_no_key_fallback(monkeypatch):
+    monkeypatch.delenv("OPENET_API_KEY", raising=False)
+    assert fetch_openet_et(39.47, -118.77, api_key=None) == {}
+
+    power = {
+        "T2M_MAX": {"20250715": 36.0},
+        "T2M_MIN": {"20250715": 18.0},
+        "PRECTOTCORR": {"20250715": 10.0},
+        "EVPTRNS": {"20250715": 50.0},
+        "GWETROOT": {"20250715": 0.4},
+    }
+    res = extract_stage1_features(power, openet_monthly_mm={7: 185.0})
+    assert res["crop_water_deficit_mm"][7] == -175.0
