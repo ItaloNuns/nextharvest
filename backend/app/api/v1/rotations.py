@@ -8,6 +8,7 @@ from app.schemas.rotation_models import (
     RecommendRequest,
     RotationRecommendation,
 )
+from app.services.ai_explainer import AiExplainer
 from app.services.auth import get_current_user
 from app.services.field_lookup import require_analyzed_field
 from app.services.market_context import lookup_location, lookup_nass_scores
@@ -16,12 +17,13 @@ from app.services.rotation_engine import RotationEngine
 router = APIRouter()
 
 
-def _message(*, nass_used: bool, et: float) -> str:
+def _message(*, nass_used: bool, et: float, llm: bool) -> str:
     et_bit = " ET do diagnóstico salvo" if et > 0 else " sem ET no diagnóstico"
     nass_bit = " e produtividades NASS do condado" if nass_used else " e catálogo interno de mercado"
+    llm_bit = " Explicações enriquecidas com OpenAI." if llm else ""
     return (
         "Três rotações calculadas com o diagnóstico já salvo (NASA POWER, SSURGO"
-        f"{et_bit}){nass_bit}. Sem nova chamada à NASA."
+        f"{et_bit}){nass_bit}. Sem nova chamada à NASA.{llm_bit}"
     )
 
 
@@ -68,10 +70,22 @@ async def recommend_rotations(
         county=location.county,
         nass_used=nass_used,
     )
+    explainer = AiExplainer()
+    strategies = await explainer.explain(
+        strategies,
+        summary=summary,
+        priorities=body.priorities,
+        location=location,
+        nass_used=nass_used,
+    )
     return RotationRecommendation(
         field_id=field.id,
         placeholder=False,
-        message=_message(nass_used=nass_used, et=summary.annual_et_demand_mm),
+        message=_message(
+            nass_used=nass_used,
+            et=summary.annual_et_demand_mm,
+            llm=explainer.used_llm,
+        ),
         location=location,
         harmonized_summary=summary,
         strategies=strategies,

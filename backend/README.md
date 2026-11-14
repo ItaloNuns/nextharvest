@@ -1,6 +1,6 @@
 # NextHarvest API
 
-Backend do desafio Field Shift. Cadastre-se em `POST /api/v1/auth/register`, envie o **Bearer token** nas rotas de talhão. `POST /api/v1/fields/analyze` salva o talhão no PostGIS e monta um diagnóstico com **NASA POWER** (clima no centroide), **USDA SSURGO** (solo) e **OpenET** (ET, se houver chave). `POST /api/v1/rotations/recommend` devolve **3 rotações**; `POST /api/v1/rotations/simulate` recalcula os scores com sliders de chuva e temperatura. Gemini e AMS ainda não entram.
+Backend do desafio Field Shift. Cadastre-se em `POST /api/v1/auth/register`, envie o **Bearer token** nas rotas de talhão. `POST /api/v1/fields/analyze` salva o talhão no PostGIS e monta um diagnóstico com **NASA POWER** (clima no centroide), **USDA SSURGO** (solo) e **OpenET** (ET, se houver chave). `POST /api/v1/rotations/recommend` devolve **3 rotações** (explicações via templates; com `OPENAI_API_KEY`, o texto é reescrito com RAG). `POST /api/v1/rotations/simulate` recalcula os scores com sliders de chuva e temperatura. AMS e Gemini ainda não entram.
 
 ## Subir
 
@@ -16,6 +16,8 @@ uvicorn app.main:app --reload
 ```
 
 O compose publica o Postgres em **5433** (evita conflito com um Postgres local na 5432). Confirme `DATABASE_URL` no `.env` com essa porta.
+
+O arquivo `.env` fica em `backend/` (não na raiz do repositório). O app carrega esse caminho automaticamente; você pode rodar o uvicorn a partir de `backend/` ou da raiz do repo, desde que o pacote `app` esteja no `PYTHONPATH` (ex.: `pip install -e .` a partir de `backend/`). Para evitar confusão com banco ou chaves, prefira `cd backend` antes de subir o servidor.
 
 Documentação: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Saúde: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health).
 
@@ -59,6 +61,14 @@ O app Flutter deve guardar o token e mandar `Authorization: Bearer <token>` em a
 | 4. Condado + NASS | FCC Census (sem chave) + QuickStats se `NASS_API_KEY` | `pytest tests/test_census_location.py tests/test_nass.py` |
 | 5. Recommend | `state`/`county`, textos com ET/NASS honestos | `pytest tests/test_recommend_route.py` |
 | 6. Simulate | Recalcula radar com `delta_precip_pct` e `delta_temp_c`; `priorities` opcional na API (perfil demo se omitir) | `pytest tests/test_simulate_route.py` |
+
+## Relatório desta feat (IA / RAG — OpenAI no Recommend)
+
+| Etapa | O que foi implementado | Como testar |
+| :--- | :--- | :--- |
+| 1. RAG | `agronomic_rag.py`: 5 snippets NRCS/FAO/NASA, overlap de tags | `pytest tests/test_agronomic_rag.py` |
+| 2. Explainer | `AiExplainer` reescreve os 5 campos com OpenAI; fallback nos templates | `pytest tests/test_ai_explainer.py` |
+| 3. Rota | `POST /rotations/recommend` chama o explainer se `OPENAI_API_KEY` existir | Recommend no `/docs` com Bearer; sem chave o texto continua o de template |
 
 Suite completa (mocks, sem NASA/USDA reais):
 
@@ -153,8 +163,10 @@ Pronto quando (Simulate): `placeholder` é `false` e o radar da baseline muda co
 - `GET /api/v1/fields/` — talhões do usuário logado
 - `POST /api/v1/fields/analyze` — POWER + SSURGO + OpenET (se houver chave) e persistência (**Bearer**)
 - `GET /api/v1/diagnostics/{field_id}` — resumo persistido (**Bearer**, só o dono)
-- `POST /api/v1/rotations/recommend` — 3 rotações; condado via FCC; NASS se houver chave (**Bearer**)
+- `POST /api/v1/rotations/recommend` — 3 rotações; condado via FCC; NASS se houver chave; OpenAI nas explicações se `OPENAI_API_KEY` (**Bearer**)
 - `POST /api/v1/rotations/simulate` — sliders de chuva/temperatura; envie `priorities` no app; na API, omitir usa o demo Nevada (**Bearer**)
 - `GET /api/v1/glossary/explain?term=NDVI` — glossário estático (público)
 
-Chaves em `.env`: `OPENET_API_KEY` e `NASS_API_KEY` ligam ET e mercado. `AMS_API_KEY` e `GEMINI_API_KEY` ainda não são usadas. Sem chave, Analyze/Recommend degradam (ET via POWER ou mercado do catálogo).
+Chaves em `.env`: `OPENET_API_KEY` e `NASS_API_KEY` ligam ET e mercado. `OPENAI_API_KEY` (opcional, modelo `OPENAI_MODEL` default `gpt-4o-mini`) reescreve as explicações do Recommend; sem chave ou se a API falhar, usam-se os templates. `AMS_API_KEY` e `GEMINI_API_KEY` ainda não são usadas. Sem chave, Analyze/Recommend degradam (ET via POWER ou mercado do catálogo).
+
+Para confirmar que o OpenAI rodou no Recommend, veja o campo `message` da resposta: deve incluir **Explicações enriquecidas com OpenAI**. Se não aparecer, confira `OPENAI_API_KEY` em `backend/.env`, reinicie o uvicorn e olhe os logs do logger `nextharvest.explainer` (skip sem chave, warning se o parse vier vazio).

@@ -119,6 +119,18 @@ def live_enabled() -> bool:
     return os.getenv("NEXTHARVEST_LIVE") == "1"
 
 
+@pytest.fixture(autouse=True)
+def stub_openai_explainer(monkeypatch, request):
+    if "test_ai_explainer" in request.node.nodeid:
+        return
+
+    async def passthrough(self, strategies, **kwargs):
+        self.used_llm = False
+        return strategies
+
+    monkeypatch.setattr("app.services.ai_explainer.AiExplainer.explain", passthrough)
+
+
 @pytest.fixture
 def mock_nasa_usda():
     with respx.mock(assert_all_called=False) as router:

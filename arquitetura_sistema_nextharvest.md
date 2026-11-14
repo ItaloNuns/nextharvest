@@ -74,8 +74,9 @@ O diagrama acima mistura **visão de produto** (grade 30 m, RAG Gemini) com o **
 | Auth JWT + bcrypt | Tabela `users`; `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
 | Ownership | `fields.user_id` — só o dono acessa analyze, diagnostics, recommend, simulate |
 | Fluxo MVP | Register/login → Analyze → Recommend → Simulate (reenviar `priorities`) |
+| OpenAI + RAG | Recommend reescreve os 5 campos se `OPENAI_API_KEY`; senão templates |
 | Público | `GET /health`, `GET /glossary/explain` |
-| Ainda planejado | Sessão/cache Redis, refresh token, verificação de e-mail, AMS/Gemini/SMAP reais, grade 30 m |
+| Ainda planejado | Sessão/cache Redis, refresh token, AMS/SMAP reais, glossário LLM, grade 30 m |
 
 Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção **Auth**).
 
@@ -183,7 +184,8 @@ backend/
 │   │   ├── field_lookup.py      # require_owned_field / require_analyzed_field
 │   │   ├── harmonizer.py        # Fusão POWER + SSURGO + OpenET (MVP talhão)
 │   │   ├── rotation_engine.py   # Motor MCDA + Regras Agronômicas
-│   │   └── ai_explainer.py      # Agente LLM (Gemini) — stub
+│   │   ├── agronomic_rag.py     # RAG em memória (snippets NRCS/FAO/NASA)
+│   │   └── ai_explainer.py      # OpenAI structured output no Recommend (Gemini não usado)
 │   └── schemas/
 │       ├── rotation_models.py   # Contratos talhão/rotação
 │       └── auth_models.py       # Register, Login, TokenResponse
@@ -388,7 +390,8 @@ A partir do cubo harmonizado de dados da NASA/USDA do talhão, o Estágio 1 calc
   * Ausência de dados locais (ex.: falta de análise química recente de micronutrientes ou medição de salinidade do poço).
 
 ### 6.3. Estágio 3 — Agente LLM com RAG Agronômico e *Structured Outputs*
-* Recebe o JSON quantitativo gerado pelos Estágios 1 e 2 + trechos recuperados via **RAG (*Retrieval-Augmented Generation*)** de boletins técnicos do **USDA NRCS / Ag Data Commons** e gera os textos explicativos em linguagem clara para o produtor, utilizando `response_schema` (Pydantic) na **API do Gemini** para garantir que todas as 5 seções obrigatórias do desafio sejam preenchidas com precisão científica, citando explicitamente qual missão da NASA forneceu cada evidência e quais validações cabem ao produtor/agrônomo local.
+* Recebe o JSON quantitativo gerado pelos Estágios 1 e 2 + trechos recuperados via **RAG (*Retrieval-Augmented Generation*)** de boletins técnicos do **USDA NRCS / Ag Data Commons** e gera os textos explicativos em linguagem clara para o produtor, utilizando `response_schema` (Pydantic) para garantir que todas as 5 seções obrigatórias do desafio sejam preenchidas com precisão científica, citando explicitamente qual missão da NASA forneceu cada evidência e quais validações cabem ao produtor/agrônomo local.
+* **MVP no repositório:** o **Recommend** chama `AiExplainer` com a **API OpenAI** (`gpt-4o-mini` por padrão) e RAG em memória (`agronomic_rag.py`). Sem `OPENAI_API_KEY` (ou se a chamada falhar) permanecem os templates determinísticos. Gemini, Simulate com LLM e glossário via LLM ficam fora desta fase.
 
 ---
 
@@ -400,7 +403,8 @@ A partir do cubo harmonizado de dados da NASA/USDA do talhão, o Estágio 1 calc
 >    * **NASA POWER**, **USDA SDA (SSURGO)**, **OpenET** (opcional), **FCC Census** + **NASS** (opcional) no fluxo Analyze → Recommend;
 >    * **JWT + ownership** (`users`, `fields.user_id`), testes `pytest` incluindo `test_auth.py`;
 >    * **Simulate** com sliders de chuva/temperatura em memória.
->    * *Próximo backend:* Gemini/RAG nas explicações, AMS, SMAP/AppEEARS, cache Redis.
+>    * **OpenAI + RAG** nas explicações do Recommend (`OPENAI_API_KEY` opcional).
+>    * *Próximo backend:* AMS, SMAP/AppEEARS, cache Redis, glossário LLM.
 > 2. **Frontend/Mobile (`next_harvest_frontend/` ou `frontend/`):**
 >    * **Próximo passo imediato:** Tela de login/register + interceptor HTTP com Bearer; depois mapa do talhão, prioridades, comparador e sliders (seção 3.2).
 >    * Reutilizar contratos em [backend/README.md](backend/README.md) e exemplos OpenAPI em `/docs`.
