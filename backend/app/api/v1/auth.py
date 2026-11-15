@@ -22,7 +22,7 @@ router = APIRouter()
 def _token_response(user: User) -> TokenResponse:
     return TokenResponse(
         access_token=create_access_token(user.id),
-        user=UserPublic(id=user.id, email=user.email),
+        user=UserPublic(id=user.id, name=user.name, email=user.email),
     )
 
 
@@ -51,6 +51,7 @@ async def register(
     _require_db(request)
     user = User(
         id=f"usr_{uuid.uuid4().hex[:12]}",
+        name=body.name,
         email=body.email,
         hashed_password=hash_password(body.password),
     )
@@ -101,4 +102,4 @@ async def login(
     summary="Current authenticated user",
 )
 async def me(user: User = Depends(get_current_user)) -> UserPublic:
-    return UserPublic(id=user.id, email=user.email)
+    return UserPublic(id=user.id, name=user.name, email=user.email)

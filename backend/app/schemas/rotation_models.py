@@ -1,6 +1,8 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+HealthStatus = Literal["ok", "warning", "critical"]
 
 
 class HealthResponse(BaseModel):
@@ -32,6 +34,18 @@ class HarmonizedSummary(BaseModel):
     smap_rootzone_anomaly_z: float
     bare_field_months: list[str]
     soil_profile: SoilProfile
+
+
+class DiagnosticDimension(BaseModel):
+    id: Literal["water", "soil", "sources"]
+    status: HealthStatus
+    label: str
+
+
+class DiagnosticHealth(BaseModel):
+    overall: HealthStatus
+    data_quality: HealthStatus
+    dimensions: list[DiagnosticDimension]
 
 
 class MetricsRadar(BaseModel):
@@ -152,6 +166,7 @@ class FieldAnalyzeResponse(BaseModel):
     placeholder: bool = True
     message: str
     summary: HarmonizedSummary
+    health: DiagnosticHealth
 
 
 class FieldListItem(BaseModel):
@@ -165,6 +180,7 @@ class DiagnosticsResponse(BaseModel):
     placeholder: bool = True
     message: str
     summary: HarmonizedSummary
+    health: DiagnosticHealth
 
 
 class RecommendRequest(BaseModel):

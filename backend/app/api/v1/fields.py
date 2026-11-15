@@ -10,6 +10,7 @@ from app.db.session import SessionLocal
 from app.geo import to_wkt
 from app.schemas.rotation_models import FieldAnalyzeRequest, FieldAnalyzeResponse, FieldListItem
 from app.services.auth import get_current_user
+from app.services.diagnostic_health import assess_diagnostic_health
 from app.services.harmonizer import GeoHarmonizerService, HarmonizerResult
 
 logger = logging.getLogger("nextharvest.fields")
@@ -101,11 +102,19 @@ async def analyze_field(
     else:
         message = f"{message} O talhão não foi gravado (banco indisponível)."
 
+    placeholder = not result.complete
     return FieldAnalyzeResponse(
         field_id=field_id,
         name=body.name,
         current_crop=body.current_crop,
-        placeholder=not result.complete,
+        placeholder=placeholder,
         message=message,
         summary=result.summary,
+        health=assess_diagnostic_health(
+            result.summary,
+            placeholder=placeholder,
+            climate_ok=result.climate_ok,
+            soil_ok=result.soil_ok,
+            et_source=result.et_source,
+        ),
     )

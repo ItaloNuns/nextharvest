@@ -10,7 +10,7 @@ def test_register_login_and_me() -> None:
         email = f"farmer_{health['database']}@example.com"
         registered = client.post(
             "/api/v1/auth/register",
-            json={"email": email, "password": "password1"},
+            json={"name": "Maria Demo", "email": email, "password": "password1"},
         )
         if health["database"] != "up":
             assert registered.status_code == 503
@@ -25,10 +25,12 @@ def test_register_login_and_me() -> None:
         assert body["token_type"] == "bearer"
         assert body["access_token"]
         assert body["user"]["email"] == email
+        assert body["user"]["name"] == "Maria Demo"
         headers = {"Authorization": f"Bearer {body['access_token']}"}
         me = client.get("/api/v1/auth/me", headers=headers)
         assert me.status_code == 200, me.text
         assert me.json()["email"] == email
+        assert me.json()["name"] == "Maria Demo"
 
         logged = client.post(
             "/api/v1/auth/login",
@@ -48,7 +50,7 @@ def test_register_duplicate_email() -> None:
         assert headers is not None
         again = client.post(
             "/api/v1/auth/register",
-            json={"email": email.upper(), "password": "password1"},
+            json={"name": "Other", "email": email.upper(), "password": "password1"},
         )
         assert again.status_code == 409
 

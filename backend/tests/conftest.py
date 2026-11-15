@@ -106,7 +106,7 @@ NASS_JSON = {
 
 def auth_headers(client, email: str | None = None) -> dict[str, str] | None:
     email = email or f"u{uuid.uuid4().hex[:10]}@example.com"
-    payload = {"email": email, "password": "password1"}
+    payload = {"name": "Test User", "email": email, "password": "password1"}
     response = client.post("/api/v1/auth/register", json=payload)
     if response.status_code == 409:
         response = client.post("/api/v1/auth/login", json=payload)

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 REGISTER_BODY_EXAMPLE: dict[str, str] = {
+    "name": "Maria Silva",
     "email": "farmer@example.com",
     "password": "password1",
 }
@@ -22,8 +23,17 @@ def _normalize_email(value: str) -> str:
 class RegisterRequest(BaseModel):
     model_config = ConfigDict(json_schema_extra={"examples": [REGISTER_BODY_EXAMPLE]})
 
+    name: str = Field(min_length=1, max_length=120)
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=8, max_length=72)
+
+    @field_validator("name")
+    @classmethod
+    def name_is_nonempty(cls, value: str) -> str:
+        name = value.strip()
+        if not name:
+            raise ValueError("Name must not be blank")
+        return name
 
     @field_validator("email")
     @classmethod
@@ -45,6 +55,7 @@ class LoginRequest(BaseModel):
 
 class UserPublic(BaseModel):
     id: str
+    name: str
     email: str
 
 

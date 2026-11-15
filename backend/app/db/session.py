@@ -29,6 +29,12 @@ async def init_db() -> None:
             text("ALTER TABLE fields ADD COLUMN IF NOT EXISTS user_id VARCHAR(64)")
         )
         await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(120)")
+        )
+        await conn.execute(text("UPDATE users SET name = '' WHERE name IS NULL"))
+        await conn.execute(text("ALTER TABLE users ALTER COLUMN name SET NOT NULL"))
+        await conn.execute(text("ALTER TABLE users ALTER COLUMN name SET DEFAULT ''"))
+        await conn.execute(
             text(
                 """
                 DO $$ BEGIN

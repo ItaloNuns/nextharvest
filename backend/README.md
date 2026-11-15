@@ -23,7 +23,7 @@ Documentação: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Saúde
 
 ### Auth (Swagger)
 
-1. `POST /api/v1/auth/register` com `farmer@example.com` / `password1` (ou `POST /auth/login` se já existir).
+1. `POST /api/v1/auth/register` com `name`, `farmer@example.com` / `password1` (ou `POST /auth/login` se já existir).
 2. Copie `access_token`.
 3. Clique em **Authorize**, cole o token (só o valor, ou `Bearer <token>` conforme o campo) e confirme.
 4. Analyze → Recommend → Simulate usam só os talhões **desse** usuário. Talhões antigos sem `user_id` ficam invisíveis.
@@ -101,7 +101,7 @@ NEXTHARVEST_LIVE=1 pytest -m live
 }
 ```
 
-Pronto quando (Analyze): `placeholder` é `false`, `annual_precip_mm` ≠ 0, `soil_profile.mapunit_name` não vazio, e `GET /diagnostics/{field_id}` devolve o mesmo resumo. Conferência no banco:
+Pronto quando (Analyze): `placeholder` é `false`, `annual_precip_mm` ≠ 0, `soil_profile.mapunit_name` não vazio, `health.overall` e `health.dimensions` preenchidos, e `GET /diagnostics/{field_id}` devolve o mesmo resumo e o mesmo `health.overall`. Conferência no banco:
 
 ```bash
 docker compose exec postgres psql -U nextharvest -d nextharvest -c "SELECT id, name FROM fields;"
@@ -157,12 +157,12 @@ Pronto quando (Simulate): `placeholder` é `false` e o radar da baseline muda co
 
 ## Rotas
 
-- `POST /api/v1/auth/register` — email + senha (mín. 8); devolve JWT
+- `POST /api/v1/auth/register` — nome + email + senha (mín. 8); devolve JWT
 - `POST /api/v1/auth/login` — mesmo contrato
 - `GET /api/v1/auth/me` — usuário do token
 - `GET /api/v1/fields/` — talhões do usuário logado
-- `POST /api/v1/fields/analyze` — POWER + SSURGO + OpenET (se houver chave) e persistência (**Bearer**)
-- `GET /api/v1/diagnostics/{field_id}` — resumo persistido (**Bearer**, só o dono)
+- `POST /api/v1/fields/analyze` — POWER + SSURGO + OpenET (se houver chave) e persistência; `health` (overall + dimensões água/solo/fontes) (**Bearer**)
+- `GET /api/v1/diagnostics/{field_id}` — resumo persistido + o mesmo `health` derivado (**Bearer**, só o dono)
 - `POST /api/v1/rotations/recommend` — 3 rotações; condado via FCC; NASS se houver chave; OpenAI nas explicações se `OPENAI_API_KEY` (**Bearer**)
 - `POST /api/v1/rotations/simulate` — sliders de chuva/temperatura; envie `priorities` no app; na API, omitir usa o demo Nevada (**Bearer**)
 - `GET /api/v1/glossary/explain?term=NDVI` — glossário estático (público)

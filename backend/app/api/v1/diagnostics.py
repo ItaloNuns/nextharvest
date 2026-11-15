@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from app.db.models import User
 from app.schemas.rotation_models import DiagnosticsResponse, HarmonizedSummary, empty_summary
 from app.services.auth import get_current_user
+from app.services.diagnostic_health import assess_diagnostic_health
 from app.services.field_lookup import require_owned_field
 
 router = APIRouter()
@@ -34,4 +35,5 @@ async def field_diagnostics(
         placeholder=placeholder,
         message=message,
         summary=summary,
+        health=assess_diagnostic_health(summary, placeholder=placeholder),
     )

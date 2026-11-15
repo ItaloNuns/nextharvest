@@ -29,6 +29,10 @@ def test_analyze_returns_real_summary_with_mocked_sources(mock_nasa_usda) -> Non
         assert body["summary"]["annual_et_demand_mm"] == expected_et
         assert body["summary"]["water_balance_deficit_mm"] == round(15.0 - expected_et, 2)
         assert body["summary"]["soil_profile"]["mapunit_name"].startswith("Dia loam")
+        health_payload = body["health"]
+        assert health_payload["overall"] in {"ok", "warning", "critical"}
+        dim_ids = {item["id"] for item in health_payload["dimensions"]}
+        assert dim_ids == {"water", "soil", "sources"}
 
         listed = client.get("/api/v1/fields/", headers=headers)
         assert listed.status_code == 200, listed.text
@@ -68,7 +72,15 @@ def test_diagnostics_roundtrip(mock_nasa_usda) -> None:
         field_id = created.json()["field_id"]
         diagnostics = client.get(f"/api/v1/diagnostics/{field_id}", headers=headers)
         assert diagnostics.status_code == 200, diagnostics.text
-        assert diagnostics.json()["summary"]["annual_precip_mm"] == 15.0
+        diag = diagnostics.json()
+        assert diag["summary"]["annual_precip_mm"] == 15.0
+        created_health = created.json()["health"]
+        assert diag["health"]["overall"] == created_health["overall"]
+        assert {item["id"] for item in diag["health"]["dimensions"]} == {
+            "water",
+            "soil",
+            "sources",
+        }
         missing = client.get("/api/v1/diagnostics/fld_does_not_exist", headers=headers)
         assert missing.status_code == 404
 
