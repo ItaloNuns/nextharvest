@@ -1,8 +1,8 @@
-# NextHarvest
+# Next Harvest
 
 **NASA Space Apps Challenge 2026** — [*Field Shift: Adapting Farms with NASA Data*](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)
 
-NextHarvest is a decision-support tool that helps farmers compare **crop rotation strategies** using **NASA climate data** and **USDA soil and market data**, grounded in the real-world alfalfa story from Churchill County, Nevada (Denise Moyle).
+Next Harvest is a decision-support tool that helps farmers compare **crop rotation strategies** using **NASA climate data** and **USDA soil and market data**, grounded in the real-world alfalfa story from Churchill County, Nevada (Denise Moyle).
 
 Stack: **Flutter** mobile client, **FastAPI** backend, **PostgreSQL + PostGIS**, harmonized field diagnostics, three explainable rotation scenarios, and climate scenario sliders. **API-facing text** (`message`, `health` labels, rotation explanations, glossary) is **English** for judges and Swagger demos.
 

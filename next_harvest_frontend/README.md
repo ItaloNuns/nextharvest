@@ -1,4 +1,4 @@
-# next_harvest_frontend
+# Next Harvest
 
 A new Flutter project.
 
