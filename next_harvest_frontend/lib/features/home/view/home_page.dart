@@ -5,14 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../map/view/map_page.dart';
 import '../../authentication/providers/auth_session_provider.dart';
 import '../../areas/providers/area_draft_viewmodel_provider.dart';
+import '../../areas/view/field_card.dart';
+import '../../areas/viewmodel/fields_viewmodel.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final fields = ref.watch(fieldsViewModelProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -34,26 +37,76 @@ class HomePage extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 104),
-              children: [
-                Text(
-                  'My Fields',
-                  style: GoogleFonts.ibmPlexSansThai(
-                    textStyle: theme.textTheme.headlineLarge,
-                    fontWeight: FontWeight.w600,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                try {
+                  await ref.read(fieldsViewModelProvider.notifier).refresh();
+                } catch (_) {
+                  // The error and retry action are displayed in the list.
+                }
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 104),
+                children: [
+                  Text(
+                    'My Fields',
+                    style: GoogleFonts.ibmPlexSansThai(
+                      textStyle: theme.textTheme.headlineLarge,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  ...fields.when(
+                    skipLoadingOnRefresh: false,
+                    loading: () => const <Widget>[
+                      Center(child: CircularProgressIndicator()),
+                    ],
+                    error: (_, _) => <Widget>[
+                      const Text(
+                        'Unable to load your fields. Please try again.',
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              ref.invalidate(fieldsViewModelProvider),
+                          child: const Text('Try again'),
+                        ),
+                      ),
+                    ],
+                    data: (items) => items.isEmpty
+                        ? <Widget>[
+                            Text(
+                              'No fields yet.',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text('Tap + to add your first field.'),
+                          ]
+                        : <Widget>[
+                            for (final field in items)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: FieldCard(field: field),
+                              ),
+                          ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add field',
-        onPressed: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute<void>(builder: (_) => const MapPage())),
+        onPressed: () async {
+          await Navigator.of(
+            context,
+          ).push(MaterialPageRoute<void>(builder: (_) => const MapPage()));
+          if (context.mounted) ref.invalidate(fieldsViewModelProvider);
+        },
         child: const Icon(Icons.add),
       ),
     );
