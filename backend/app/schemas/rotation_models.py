@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 HealthStatus = Literal["ok", "warning", "critical"]
+EtSource = Literal["openet", "power", "none"]
 
 
 class HealthResponse(BaseModel):
@@ -49,6 +51,13 @@ class DiagnosticHealth(BaseModel):
     dimensions: list[DiagnosticDimension]
 
 
+class AnalysisMeta(BaseModel):
+    climate_ok: bool
+    soil_ok: bool
+    et_source: EtSource
+    failures: list[str] = []
+
+
 class MetricsRadar(BaseModel):
     water_efficiency_score: int = Field(ge=0, le=100)
     soil_health_organic_matter_score: int = Field(ge=0, le=100)
@@ -82,6 +91,7 @@ class RotationRecommendation(BaseModel):
     location: Location
     harmonized_summary: HarmonizedSummary
     strategies: list[RotationStrategy]
+    nass_used: bool = False
 
 
 DEMO_PRIORITIES_JSON: dict[str, object] = {
@@ -168,6 +178,7 @@ class FieldAnalyzeResponse(BaseModel):
     message: str
     summary: HarmonizedSummary
     health: DiagnosticHealth
+    analysis_meta: AnalysisMeta
 
 
 class FieldListItem(BaseModel):
@@ -182,6 +193,7 @@ class DiagnosticsResponse(BaseModel):
     message: str
     summary: HarmonizedSummary
     health: DiagnosticHealth
+    analysis_meta: AnalysisMeta
 
 
 class RecommendRequest(BaseModel):
@@ -230,6 +242,12 @@ class SimulationResponse(BaseModel):
     placeholder: bool = True
     message: str
     strategies: list[RotationStrategy]
+
+
+class LatestSimulationResponse(BaseModel):
+    id: int
+    created_at: datetime
+    simulation: SimulationResponse
 
 
 class GlossaryResponse(BaseModel):

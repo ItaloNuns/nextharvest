@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request
 
 from app.db.models import User
 from app.schemas.rotation_models import DiagnosticsResponse, HarmonizedSummary, empty_summary
+from app.services.analysis_meta import from_stored
 from app.services.auth import get_current_user
 from app.services.diagnostic_health import assess_diagnostic_health
 from app.services.field_lookup import require_owned_field
@@ -30,19 +31,19 @@ async def field_diagnostics(
         placeholder = True
         message = "Talhão encontrado, mas ainda sem resumo harmonizado gravado."
 
-    meta = field.last_analysis_meta if isinstance(field.last_analysis_meta, dict) else {}
-    health_kwargs: dict = {}
-    if meta:
-        if "climate_ok" in meta:
-            health_kwargs["climate_ok"] = bool(meta["climate_ok"])
-        if "soil_ok" in meta:
-            health_kwargs["soil_ok"] = bool(meta["soil_ok"])
-        if "et_source" in meta:
-            health_kwargs["et_source"] = str(meta["et_source"])
+    stored = field.last_analysis_meta if isinstance(field.last_analysis_meta, dict) else None
+    analysis_meta = from_stored(stored, summary)
     return DiagnosticsResponse(
         field_id=field.id,
         placeholder=placeholder,
         message=message,
         summary=summary,
-        health=assess_diagnostic_health(summary, placeholder=placeholder, **health_kwargs),
+        health=assess_diagnostic_health(
+            summary,
+            placeholder=placeholder,
+            climate_ok=analysis_meta.climate_ok,
+            soil_ok=analysis_meta.soil_ok,
+            et_source=analysis_meta.et_source,
+        ),
+        analysis_meta=analysis_meta,
     )

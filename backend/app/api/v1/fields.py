@@ -1,16 +1,24 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import select
+from sqlalchemy import desc, select
 
-from app.db.models import Field, User
+from app.db.models import Field, Simulation, User
 from app.db.session import SessionLocal
 from app.geo import to_wkt
-from app.schemas.rotation_models import FieldAnalyzeRequest, FieldAnalyzeResponse, FieldListItem
+from app.schemas.rotation_models import (
+    FieldAnalyzeRequest,
+    FieldAnalyzeResponse,
+    FieldListItem,
+    LatestSimulationResponse,
+    SimulationResponse,
+)
+from app.services.analysis_meta import from_harmonizer, persist_payload
 from app.services.auth import get_current_user
 from app.services.diagnostic_health import assess_diagnostic_health
+from app.services.field_lookup import require_owned_field
 from app.services.harmonizer import GeoHarmonizerService, HarmonizerResult
 
 logger = logging.getLogger("nextharvest.fields")
@@ -62,13 +70,7 @@ async def _persist(
                     current_crop=body.current_crop,
                     geometry=WKTElement(to_wkt(body.geometry), srid=4326),
                     last_summary=result.summary.model_dump(),
-                    last_analysis_meta={
-                        "climate_ok": result.climate_ok,
-                        "soil_ok": result.soil_ok,
-                        "et_source": result.et_source,
-                        "failures": result.failures,
-                        "rootzone_source": result.summary.rootzone_source,
-                    },
+                    last_analysis_meta=persist_payload(result),
                 )
             )
             await session.commit()
@@ -119,6 +121,7 @@ async def analyze_field(
         message = f"{message} O talhão não foi gravado (banco indisponível)."
 
     placeholder = not result.complete
+    analysis_meta = from_harmonizer(result)
     return FieldAnalyzeResponse(
         field_id=field_id,
         name=body.name,
@@ -129,8 +132,35 @@ async def analyze_field(
         health=assess_diagnostic_health(
             result.summary,
             placeholder=placeholder,
-            climate_ok=result.climate_ok,
-            soil_ok=result.soil_ok,
-            et_source=result.et_source,
+            climate_ok=analysis_meta.climate_ok,
+            soil_ok=analysis_meta.soil_ok,
+            et_source=analysis_meta.et_source,
         ),
+        analysis_meta=analysis_meta,
+    )
+
+
+@router.get(
+    "/{field_id}/simulations/latest",
+    response_model=LatestSimulationResponse,
+    summary="Latest climate simulation for an owned field",
+)
+async def latest_simulation(
+    field_id: str,
+    request: Request,
+    user: User = Depends(get_current_user),
+) -> LatestSimulationResponse:
+    field = await require_owned_field(request, field_id, user)
+    async with SessionLocal() as session:
+        row = await session.scalar(
+            select(Simulation)
+            .where(Simulation.field_id == field.id)
+            .order_by(desc(Simulation.created_at), desc(Simulation.id))
+        )
+    if row is None:
+        raise HTTPException(status_code=404, detail="No simulation for this field")
+    return LatestSimulationResponse(
+        id=row.id,
+        created_at=row.created_at,
+        simulation=SimulationResponse.model_validate(row.result),
     )

@@ -7,6 +7,15 @@ from app.config import get_settings
 from tests.conftest import DEMO_GEOMETRY, OPENET_JSON, live_enabled
 
 
+class _TimeoutRecorder:
+    def __init__(self) -> None:
+        self.timeouts: list[object] = []
+
+    async def post(self, url, **kwargs):
+        self.timeouts.append(kwargs.get("timeout"))
+        return httpx.Response(200, json=OPENET_JSON)
+
+
 def test_summarize_openet_sums_monthly_et() -> None:
     parsed = summarize_openet_payload(OPENET_JSON)
     assert parsed["ok"] is True
@@ -28,6 +37,32 @@ async def test_fetch_polygon_parses_mocked_response() -> None:
             DEMO_GEOMETRY, "2025-01-01", "2025-12-31"
         )
     assert result["annual_et_mm"] == 200.0
+
+
+@pytest.mark.asyncio
+async def test_fetch_polygon_retries_503_then_succeeds() -> None:
+    with respx.mock:
+        route = respx.post("https://openet-api.org/raster/timeseries/polygon").mock(
+            side_effect=[
+                httpx.Response(503, text="busy"),
+                httpx.Response(200, json=OPENET_JSON),
+            ]
+        )
+        result = await OpenEtClient(api_key="test-key").fetch_polygon(
+            DEMO_GEOMETRY, "2025-01-01", "2025-12-31"
+        )
+    assert result["annual_et_mm"] == 200.0
+    assert route.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_openet_post_uses_60s_timeout() -> None:
+    recorder = _TimeoutRecorder()
+    result = await OpenEtClient(recorder, api_key="test-key").fetch_point(
+        39.47, -118.77, "2025-01-01", "2025-12-31"
+    )
+    assert result["annual_et_mm"] == 200.0
+    assert recorder.timeouts == [60.0]
 
 
 @pytest.mark.asyncio

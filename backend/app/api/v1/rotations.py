@@ -89,4 +89,5 @@ async def recommend_rotations(
         location=location,
         harmonized_summary=summary,
         strategies=strategies,
+        nass_used=nass_used,
     )
