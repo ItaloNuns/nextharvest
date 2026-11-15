@@ -35,6 +35,7 @@ async def test_summarize_prefers_openet_over_power(monkeypatch: pytest.MonkeyPat
     assert result.summary.water_balance_deficit_mm == pytest.approx(132.4 - 1180.0)
     assert result.summary.soil_profile.mapunit_name.startswith("Dia loam")
     assert result.summary.bare_field_months == []
+    assert result.summary.rootzone_source == "none"
     assert result.lat == pytest.approx(39.475, abs=1e-6)
 
 
@@ -77,3 +78,49 @@ async def test_summarize_survives_power_failure(monkeypatch: pytest.MonkeyPatch)
     assert result.soil_ok is True
     assert result.summary.soil_profile.hydrologic_group == "B"
     assert any("NASA POWER" in item for item in result.failures)
+
+
+def _power_raw_winter_bare() -> dict:
+    params: dict[str, dict[str, float]] = {
+        "PRECTOTCORR": {},
+        "GWETROOT": {},
+        "T2M": {},
+        "T2M_MAX": {},
+        "T2M_MIN": {},
+        "EVPTRNS": {},
+    }
+    for month, et, gwet in ((1, 4.0, 0.20), (7, 40.0, 0.50)):
+        for day in range(1, 4):
+            key = f"2025{month:02d}{day:02d}"
+            params["PRECTOTCORR"][key] = 1.0
+            params["GWETROOT"][key] = gwet
+            params["EVPTRNS"][key] = et
+            params["T2M"][key] = 5.0
+            params["T2M_MAX"][key] = 10.0
+            params["T2M_MIN"][key] = 0.0
+    return {"header": {"fill_value": -999.0}, "properties": {"parameter": params}}
+
+
+@pytest.mark.asyncio
+async def test_summarize_fills_rootzone_from_power_raw(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = _power_raw_winter_bare()
+    monkeypatch.setattr(OpenEtClient, "enabled", False)
+    monkeypatch.setattr(
+        "app.services.harmonizer.NasaPowerClient.fetch_point",
+        AsyncMock(
+            return_value={
+                "annual_precip_mm": 6.0,
+                "annual_et_mm": 132.0,
+                "raw": raw,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        "app.services.harmonizer.UsdaSdaSoilsClient.fetch_polygon",
+        AsyncMock(return_value={"ok": True, "profile": SOIL_PROFILE}),
+    )
+    result = await GeoHarmonizerService().summarize(_field())
+    assert result.summary.rootzone_source == "power_gwetroot"
+    assert result.summary.bare_field_months
+    assert "January" in result.summary.bare_field_months
+    assert result.summary.smap_rootzone_anomaly_z != 0

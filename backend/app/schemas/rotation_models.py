@@ -34,6 +34,7 @@ class HarmonizedSummary(BaseModel):
     smap_rootzone_anomaly_z: float
     bare_field_months: list[str]
     soil_profile: SoilProfile
+    rootzone_source: Literal["none", "power_gwetroot"] = "none"
 
 
 class DiagnosticDimension(BaseModel):

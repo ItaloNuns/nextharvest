@@ -30,10 +30,19 @@ async def field_diagnostics(
         placeholder = True
         message = "Talhão encontrado, mas ainda sem resumo harmonizado gravado."
 
+    meta = field.last_analysis_meta if isinstance(field.last_analysis_meta, dict) else {}
+    health_kwargs: dict = {}
+    if meta:
+        if "climate_ok" in meta:
+            health_kwargs["climate_ok"] = bool(meta["climate_ok"])
+        if "soil_ok" in meta:
+            health_kwargs["soil_ok"] = bool(meta["soil_ok"])
+        if "et_source" in meta:
+            health_kwargs["et_source"] = str(meta["et_source"])
     return DiagnosticsResponse(
         field_id=field.id,
         placeholder=placeholder,
         message=message,
         summary=summary,
-        health=assess_diagnostic_health(summary, placeholder=placeholder),
+        health=assess_diagnostic_health(summary, placeholder=placeholder, **health_kwargs),
     )

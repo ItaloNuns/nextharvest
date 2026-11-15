@@ -78,8 +78,9 @@ O diagrama acima mistura **visão de produto** (grade 30 m, RAG Gemini) com o **
 | OpenAI + RAG | Recommend reescreve os 5 campos se `OPENAI_API_KEY`; senão templates; `.env` carregado de `backend/` (independente do cwd do uvicorn) |
 | NASS (condado) | FCC devolve `Churchill County`; QuickStats recebe nome normalizado (`CHURCHILL`) + retry ano anterior |
 | Público | `GET /health`, `GET /glossary/explain` |
-| Resumo harmonizado MVP | Precip/ET/solo SSURGO; `smap_rootzone_anomaly_z` e `bare_field_months` ainda **zerados/vazios** até integrar SMAP/óptica |
-| Ainda planejado | Sessão/cache Redis, refresh token, AMS/SMAP reais, glossário LLM, grade 30 m, timeline solo nu |
+| Resumo harmonizado MVP | Precip/ET/solo SSURGO; `smap_rootzone_anomaly_z` e `bare_field_months` via **proxy NASA POWER GWETROOT** (`rootzone_source=power_gwetroot`); SMAP/óptica reais ainda roadmap |
+| Meta de fontes | `fields.last_analysis_meta` (climate/soil/ET) para `health.sources` igual no analyze e no diagnostics |
+| Ainda planejado | Sessão/cache Redis, refresh token, AMS/SMAP reais, glossário LLM, grade 30 m, NDVI/SCL de solo nu |
 
 Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção **Auth**).
 

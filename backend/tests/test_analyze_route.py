@@ -76,6 +76,7 @@ def test_diagnostics_roundtrip(mock_nasa_usda) -> None:
         assert diag["summary"]["annual_precip_mm"] == 15.0
         created_health = created.json()["health"]
         assert diag["health"]["overall"] == created_health["overall"]
+        assert diag["health"]["data_quality"] == created_health["data_quality"]
         assert {item["id"] for item in diag["health"]["dimensions"]} == {
             "water",
             "soil",

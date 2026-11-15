@@ -105,3 +105,37 @@ def test_evidence_cites_et_and_nass_when_present() -> None:
     assert "QuickStats" in evidence
     assert "ainda não foram consultados" not in gaps
     assert "AMS" in gaps
+
+
+def test_evidence_cites_power_gwetroot_not_smap() -> None:
+    summary = _summary().model_copy(
+        update={
+            "annual_et_demand_mm": 200.0,
+            "water_balance_deficit_mm": -185.0,
+            "smap_rootzone_anomaly_z": -1.2,
+            "bare_field_months": ["January"],
+            "rootzone_source": "power_gwetroot",
+        }
+    )
+    radar = MetricsRadar(
+        water_efficiency_score=80,
+        soil_health_organic_matter_score=70,
+        nitrogen_fixation_score=60,
+        erosion_protection_score=75,
+        pest_cycle_disruption_score=70,
+        market_viability_score=70,
+    )
+    explanation = explain_strategy(
+        role="water",
+        sequence_label="Sorgo",
+        current_crop="Alfafa",
+        summary=summary,
+        priorities=FarmerPriorities(water_savings=5),
+        radar=radar,
+        baseline_radar=radar,
+    )
+    evidence = " ".join(explanation.supporting_evidence)
+    assert "GWETROOT" in evidence
+    assert "January" in evidence
+    assert "não SMAP" in evidence
+    assert "SMAP L4" not in evidence
