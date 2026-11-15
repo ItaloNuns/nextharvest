@@ -6,6 +6,7 @@ class DiagnosticSummary {
     this.annualEtDemandMm,
     this.waterBalanceDeficitMm,
     this.smapRootzoneAnomalyZ,
+    this.rootzoneSource,
     List<String> bareFieldMonths = const [],
     this.soilProfile,
   }) : bareFieldMonths = List.unmodifiable(bareFieldMonths);
@@ -18,6 +19,7 @@ class DiagnosticSummary {
             ?.toDouble(),
         smapRootzoneAnomalyZ: (json['smap_rootzone_anomaly_z'] as num?)
             ?.toDouble(),
+        rootzoneSource: json['rootzone_source'] as String?,
         bareFieldMonths:
             (json['bare_field_months'] as List?)?.cast<String>() ?? const [],
         soilProfile: json['soil_profile'] == null
@@ -31,6 +33,7 @@ class DiagnosticSummary {
   final double? annualEtDemandMm;
   final double? waterBalanceDeficitMm;
   final double? smapRootzoneAnomalyZ;
+  final String? rootzoneSource;
   final List<String> bareFieldMonths;
   final SoilProfile? soilProfile;
 }
