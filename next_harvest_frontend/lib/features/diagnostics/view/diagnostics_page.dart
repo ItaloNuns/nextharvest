@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../areas/models/field.dart';
+import '../../recommendations/view/recommendation_form_page.dart';
 import '../providers/diagnostics_viewmodel_provider.dart';
 import 'widgets/diagnostic_summary_view.dart';
 import 'widgets/field_health_view.dart';
@@ -99,6 +100,23 @@ class DiagnosticsPage extends ConsumerWidget {
                         const Text('Diagnostic summary is not available yet.'),
                       if (diagnostic.health != null)
                         FieldHealthView(health: diagnostic.health!),
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => RecommendationFormPage(
+                              field: Field(
+                                id: field.id,
+                                name: diagnostic.name ?? field.name,
+                                currentCrop:
+                                    diagnostic.currentCrop ?? field.currentCrop,
+                              ),
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.auto_awesome_outlined),
+                        label: const Text('Recommend rotations'),
+                      ),
                     ],
                   ),
                 ],
