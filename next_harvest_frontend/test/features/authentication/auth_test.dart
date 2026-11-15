@@ -64,7 +64,11 @@ void main() {
       final repository = AuthRepositoryImpl(dio);
       for (final register in [false, true]) {
         final session = await (register
-            ? repository.register(' farmer@example.com ', ' password1 ')
+            ? repository.register(
+                ' farmer@example.com ',
+                ' password1 ',
+                name: ' Farmer Smith ',
+              )
             : repository.login(' farmer@example.com ', ' password1 '));
         expect(session.user.email, 'farmer@example.com');
       }
@@ -75,6 +79,11 @@ void main() {
         'https://backend.example/api/v1/auth/me',
       ]);
       expect(adapter.requests.first.data, {
+        'email': 'farmer@example.com',
+        'password': ' password1 ',
+      });
+      expect(adapter.requests[1].data, {
+        'name': 'Farmer Smith',
         'email': 'farmer@example.com',
         'password': ' password1 ',
       });

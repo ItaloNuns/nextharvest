@@ -32,8 +32,11 @@ class SessionRepository implements AuthRepository {
   Future<AuthSession> login(String email, String password) =>
       throw UnimplementedError();
   @override
-  Future<AuthSession> register(String email, String password) =>
-      throw UnimplementedError();
+  Future<AuthSession> register(
+    String email,
+    String password, {
+    required String name,
+  }) => throw UnimplementedError();
 }
 
 void main() {

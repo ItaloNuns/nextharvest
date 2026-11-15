@@ -13,6 +13,8 @@ class AuthPage extends ConsumerStatefulWidget {
 class _AuthPageState extends ConsumerState<AuthPage> {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
+  final _name = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _password = TextEditingController();
   bool _register = false;
   bool _hidePassword = true;
@@ -20,6 +22,8 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   @override
   void dispose() {
     _email.dispose();
+    _name.dispose();
+    _confirmPassword.dispose();
     _password.dispose();
     super.dispose();
   }
@@ -33,6 +37,17 @@ class _AuthPageState extends ConsumerState<AuthPage> {
           email: _email.text,
           password: _password.text,
           register: _register,
+          name: _register ? _name.text : null,
+          onRegistrationSuccess: () async {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account created successfully'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            await Future<void>.delayed(const Duration(seconds: 2));
+          },
         );
   }
 
@@ -69,6 +84,21 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                         style: theme.textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 24),
+                      if (_register) ...[
+                        TextFormField(
+                          controller: _name,
+                          enabled: !state.isLoading,
+                          decoration: const InputDecoration(labelText: 'Name'),
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.name],
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Enter your name.'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       TextFormField(
                         controller: _email,
                         enabled: !state.isLoading,
@@ -96,7 +126,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                               ? AutofillHints.newPassword
                               : AutofillHints.password,
                         ],
-                        textInputAction: TextInputAction.done,
+                        textInputAction: _register
+                            ? TextInputAction.next
+                            : TextInputAction.done,
                         onFieldSubmitted: (_) {
                           if (!state.isLoading) _submit();
                         },
@@ -119,6 +151,32 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                             ? 'Enter your password.'
                             : null,
                       ),
+                      if (_register) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _confirmPassword,
+                          enabled: !state.isLoading,
+                          obscureText: _hidePassword,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          decoration: const InputDecoration(
+                            labelText: 'Confirm password',
+                          ),
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            if (!state.isLoading) _submit();
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Confirm your password.';
+                            }
+                            if (value != _password.text) {
+                              return 'Passwords do not match.';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                       if (state.hasError) ...[
                         const SizedBox(height: 16),
                         Semantics(
@@ -151,6 +209,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                     .clearError();
                                 _form.currentState?.reset();
                                 _password.clear();
+                                _confirmPassword.clear();
                                 setState(() => _register = !_register);
                               },
                         child: Text(

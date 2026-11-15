@@ -1,5 +1,5 @@
 class AuthUser {
-  const AuthUser({required this.id, required this.email});
+  const AuthUser({required this.id, required this.email, this.name});
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -7,11 +7,19 @@ class AuthUser {
     if (id is! String || id.isEmpty || email is! String || email.isEmpty) {
       throw const FormatException('Invalid user response');
     }
-    return AuthUser(id: id, email: email);
+    final name = json['name'];
+    if (name != null && name is! String) {
+      throw const FormatException('Invalid user name');
+    }
+    return AuthUser(id: id, email: email, name: (name as String?)?.trim());
   }
 
   final String id;
   final String email;
+  final String? name;
+
+  String get displayName =>
+      name?.isNotEmpty == true ? name! : email.split('@').first;
 }
 
 class AuthSession {

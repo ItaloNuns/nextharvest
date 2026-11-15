@@ -15,17 +15,25 @@ class AuthRepositoryImpl implements AuthRepository {
       _authenticate('login', email, password);
 
   @override
-  Future<AuthSession> register(String email, String password) =>
-      _authenticate('register', email, password);
+  Future<AuthSession> register(
+    String email,
+    String password, {
+    required String name,
+  }) => _authenticate('register', email, password, name: name);
 
   Future<AuthSession> _authenticate(
     String action,
     String email,
-    String password,
-  ) async {
+    String password, {
+    String? name,
+  }) async {
     final response = await _dio.postUri<Map<String, dynamic>>(
       _endpoint(action),
-      data: {'email': email.trim(), 'password': password},
+      data: {
+        if (name != null) 'name': name.trim(),
+        'email': email.trim(),
+        'password': password,
+      },
     );
     return AuthSession.fromJson(response.data!);
   }

@@ -21,15 +21,35 @@ class AuthViewModel extends Notifier<AsyncValue<void>> {
     required String email,
     required String password,
     required bool register,
+    String? name,
+    Future<void> Function()? onRegistrationSuccess,
   }) async {
     if (state.isLoading) return;
     state = const AsyncLoading();
     try {
+      if (register && (name == null || name.trim().isEmpty)) {
+        state = AsyncError('Enter your name.', StackTrace.current);
+        return;
+      }
       final repository = ref.read(authRepositoryProvider);
       final session = await (register
-          ? repository.register(email, password)
+          ? repository.register(email, password, name: name!.trim())
           : repository.login(email, password));
-      final user = await repository.currentUser(session.accessToken);
+      final profile = await repository.currentUser(session.accessToken);
+      final user = AuthUser(
+        id: profile.id,
+        email: profile.email,
+        name: profile.name?.isNotEmpty == true
+            ? profile.name
+            : session.user.name?.isNotEmpty == true
+            ? session.user.name
+            : register
+            ? name!.trim()
+            : null,
+      );
+      if (register && onRegistrationSuccess != null) {
+        await onRegistrationSuccess();
+      }
       await ref
           .read(authSessionProvider.notifier)
           .saveSession(

@@ -137,7 +137,7 @@ class _HomeDrawer extends ConsumerWidget {
                 child: const Icon(Icons.person_outline),
               ),
               accountName: Text(
-                user?.email.split('@').first ?? '',
+                user?.displayName ?? '',
                 style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
               ),
               accountEmail: Text(
