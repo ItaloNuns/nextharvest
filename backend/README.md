@@ -37,9 +37,9 @@ O app Flutter deve guardar o token e mandar `Authorization: Bearer <token>` em a
 | 1. Geo | `app/geo.py`: centroide `(lat, lon)` e WKT a partir de Polygon/Feature | `pytest tests/test_geo.py` (sem internet) |
 | 2. NASA POWER | `NasaPowerClient.fetch_point` soma `PRECTOTCORR` do último ano e ignora fill `-999` | `pytest tests/test_nasa_power.py` (mock). Ao vivo: `NEXTHARVEST_LIVE=1 pytest tests/test_nasa_power.py -m live` |
 | 3. USDA SDA | `UsdaSdaSoilsClient.fetch_polygon` consulta SSURGO; fora dos EUA devolve perfil vazio, não 500 | `pytest tests/test_usda_sda.py`. Ao vivo: `NEXTHARVEST_LIVE=1 pytest tests/test_usda_sda.py -m live` |
-| 4. Harmonizer | `GeoHarmonizerService.summarize` chama POWER e SDA em paralelo; uma falha não derruba a outra | `pytest tests/test_harmonizer.py` |
-| 5. Analyze | `POST /api/v1/fields/analyze` persiste geometria + `last_summary`; `placeholder=false` só se clima **e** solo ok | `pytest tests/test_analyze_route.py` ou o POST no `/docs` com o polígono Nevada |
-| 6. Diagnostics | `GET /api/v1/diagnostics/{field_id}` lê o resumo gravado (404 se o id não existir) | Analyze → copiar `field_id` → GET diagnostics |
+| 4. Harmonizer | `GeoHarmonizerService.summarize` chama POWER e SDA em paralelo; uma falha não derruba a outra; GWETROOT preenche Z e meses de solo nu (proxy) | `pytest tests/test_harmonizer.py` |
+| 5. Analyze | `POST /api/v1/fields/analyze` persiste geometria + `last_summary` + `last_analysis_meta`; `placeholder=false` só se clima **e** solo ok | `pytest tests/test_analyze_route.py` ou o POST no `/docs` com o polígono Nevada |
+| 6. Diagnostics | `GET /api/v1/diagnostics/{field_id}` lê o resumo gravado e deriva `health` com a meta persistida | Analyze → copiar `field_id` → GET diagnostics |
 
 ## Relatório desta feat (Fase 3 — Recommend)
 

@@ -39,6 +39,7 @@ class Field(Base):
         nullable=False,
     )
     last_summary: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    last_analysis_meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     owner: Mapped[User | None] = relationship(back_populates="fields")
     simulations: Mapped[list["Simulation"]] = relationship(back_populates="field")

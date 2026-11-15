@@ -10,10 +10,10 @@ from app.schemas.rotation_models import (
 )
 
 _GAP_SMAP_BARE = (
-    "Umidade profunda (SMAP) e meses de solo nu ainda não entram nesta recomendação."
+    "SMAP satélite e série óptica de solo nu ainda não entram nesta recomendação."
 )
 _GAP_ET = (
-    "Evapotranspiração (ET), umidade profunda (SMAP) e meses de solo nu "
+    "Evapotranspiração (ET), SMAP satélite e série óptica de solo nu "
     "ainda não entram nesta recomendação."
 )
 _GAP_NASS = (
@@ -91,9 +91,26 @@ def _evidence(
             f"{summary.annual_et_demand_mm} mm; balanço hídrico "
             f"{summary.water_balance_deficit_mm} mm (chuva menos ET)."
         )
-        items.append(_GAP_SMAP_BARE)
-    else:
-        items.append(_GAP_ET)
+    cited_rootzone = False
+    if summary.rootzone_source == "power_gwetroot":
+        items.append(
+            "NASA POWER GWETROOT (proxy de umidade radicular, não SMAP): "
+            f"anomalia Z={summary.smap_rootzone_anomaly_z}."
+        )
+        cited_rootzone = True
+    if summary.bare_field_months:
+        months = ", ".join(summary.bare_field_months)
+        items.append(
+            "Meses com possível solo nu (proxy POWER: ET baixa e umidade baixa): "
+            f"{months}."
+        )
+        cited_rootzone = True
+    if not cited_rootzone:
+        items.append(_GAP_ET if summary.annual_et_demand_mm <= 0 else _GAP_SMAP_BARE)
+    elif summary.annual_et_demand_mm <= 0:
+        items.append(
+            "Evapotranspiração anual ainda indisponível neste diagnóstico."
+        )
     if nass_used:
         place = ", ".join(part for part in (county, state) if part) or "o condado do talhão"
         items.append(f"USDA NASS QuickStats: produtividades de {place} usadas na nota de mercado.")

@@ -34,7 +34,9 @@ information_gaps_and_uncertainty, risks_requiring_local_review).
 Regras:
 - Use APENAS números e fatos presentes no JSON do usuário (chuva, ET, scores, solo, condado).
 - Não invente SMAP, NDVI, AMS, ECOSTRESS ou meses de solo nu se o JSON não os tiver com valor útil.
-- Se smap_rootzone_anomaly_z for 0 e bare_field_months estiver vazio, diga que SMAP e solo nu não entraram nesta recomendação.
+- Se rootzone_source for "power_gwetroot", cite NASA POWER GWETROOT para smap_rootzone_anomaly_z; NÃO chame isso de SMAP.
+- Se bare_field_months não estiver vazio, são um proxy POWER (ET baixa + GWETROOT baixo), não Sentinel/NDVI.
+- Se rootzone_source for "none" e bare_field_months estiver vazio, diga que SMAP satélite e solo nu óptico não entraram nesta recomendação.
 - Se nass_used for false, não afirme que o USDA NASS foi consultado.
 - Cite NASA POWER, SSURGO e OpenET somente quando o resumo tiver precipitação, solo ou ET > 0.
 - Sempre inclua risco que exige revisão com agrônomo local.
@@ -144,7 +146,9 @@ class AiExplainer:
             "priorities": priorities.model_dump(),
             "nass_used": nass_used,
             "et_available": summary.annual_et_demand_mm > 0,
-            "smap_used": summary.smap_rootzone_anomaly_z != 0,
+            "smap_used": False,
+            "rootzone_source": summary.rootzone_source,
+            "gwetroot_used": summary.rootzone_source == "power_gwetroot",
             "rag_context": rag_context,
             "strategies": [
                 {

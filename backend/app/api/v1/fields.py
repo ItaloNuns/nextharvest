@@ -28,9 +28,18 @@ def _message(result: HarmonizerResult) -> str:
         extra = ""
         if result.failures:
             extra = " Avisos: " + " | ".join(result.failures)
+        if result.summary.rootzone_source == "power_gwetroot":
+            moisture_bit = " Umidade radicular via NASA POWER (GWETROOT; proxy, não SMAP)."
+        else:
+            moisture_bit = " SMAP satélite ainda não entra."
+        if result.summary.bare_field_months:
+            months = ", ".join(result.summary.bare_field_months)
+            bare_bit = f" Meses de possível solo nu (proxy POWER): {months}."
+        else:
+            bare_bit = " Sem meses de solo nu no proxy POWER."
         return (
             "Diagnóstico montado com NASA POWER (clima no centroide) e USDA SSURGO "
-            f"(solo no polígono).{et_bit} SMAP e solo exposto ainda não entram.{extra}"
+            f"(solo no polígono).{et_bit}{moisture_bit}{bare_bit}{extra}"
         )
     if result.failures:
         return "Diagnóstico parcial. " + " | ".join(result.failures)
@@ -53,6 +62,13 @@ async def _persist(
                     current_crop=body.current_crop,
                     geometry=WKTElement(to_wkt(body.geometry), srid=4326),
                     last_summary=result.summary.model_dump(),
+                    last_analysis_meta={
+                        "climate_ok": result.climate_ok,
+                        "soil_ok": result.soil_ok,
+                        "et_source": result.et_source,
+                        "failures": result.failures,
+                        "rootzone_source": result.summary.rootzone_source,
+                    },
                 )
             )
             await session.commit()

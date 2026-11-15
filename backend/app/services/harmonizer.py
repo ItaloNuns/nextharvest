@@ -14,6 +14,7 @@ from app.schemas.rotation_models import (
     SoilProfile,
     empty_summary,
 )
+from app.services.stage1_features import summarize_stage1_from_power_raw
 
 logger = logging.getLogger("nextharvest.harmonizer")
 
@@ -74,13 +75,18 @@ class GeoHarmonizerService:
             et_demand = 0.0
             et_source = "none"
 
+        smap_z, bare_months, rootzone_source = _rootzone_from_power(
+            climate.get("raw"),
+            kwfact=float(soil.erosion_k_factor or 0.30),
+        )
         summary = HarmonizedSummary(
             annual_precip_mm=precip,
             annual_et_demand_mm=round(et_demand, 2),
             water_balance_deficit_mm=round(precip - et_demand, 2),
-            smap_rootzone_anomaly_z=0,
-            bare_field_months=[],
+            smap_rootzone_anomaly_z=smap_z,
+            bare_field_months=bare_months,
             soil_profile=soil,
+            rootzone_source=rootzone_source,
         )
         return HarmonizerResult(
             summary=summary,
@@ -123,3 +129,12 @@ class GeoHarmonizerService:
         except Exception as exc:
             logger.warning("OpenET failed: %s", exc)
             return False, 0.0, f"OpenET: {exc}"
+
+
+def _rootzone_from_power(raw: dict | None, *, kwfact: float) -> tuple[float, list[str], str]:
+    if not raw:
+        return 0.0, [], "none"
+    params = ((raw.get("properties") or {}).get("parameter") or {})
+    z_val, months = summarize_stage1_from_power_raw(raw, kwfact=kwfact or 0.30)
+    source = "power_gwetroot" if params.get("GWETROOT") else "none"
+    return z_val, months, source

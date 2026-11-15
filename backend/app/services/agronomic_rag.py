@@ -102,6 +102,6 @@ def extra_tags_from_summary(summary: HarmonizedSummary) -> list[str]:
         tags.append("bare")
     if summary.water_balance_deficit_mm < 0:
         tags.append("drought")
-    if summary.smap_rootzone_anomaly_z != 0:
+    if summary.rootzone_source != "power_gwetroot" and summary.smap_rootzone_anomaly_z != 0:
         tags.append("smap")
     return tags
