@@ -1,5 +1,7 @@
 # NextHarvest API
 
+**Space Apps overview (English):** see the [repository root README](../README.md) for the public project link, challenge mapping, and quick start.
+
 Backend do desafio Field Shift. Cadastre-se em `POST /api/v1/auth/register`, envie o **Bearer token** nas rotas de talhão. `POST /api/v1/fields/analyze` salva o talhão no PostGIS e monta um diagnóstico com **NASA POWER** (clima no centroide), **USDA SSURGO** (solo) e **OpenET** (ET, se houver chave). `POST /api/v1/rotations/recommend` devolve **3 rotações** (explicações via templates; com `OPENAI_API_KEY`, o texto é reescrito com RAG). `POST /api/v1/rotations/simulate` recalcula os scores com sliders de chuva e temperatura. AMS e Gemini ainda não entram.
 
 ## Subir
