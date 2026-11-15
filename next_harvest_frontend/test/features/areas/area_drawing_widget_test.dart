@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:next_harvest_frontend/features/diagnostics/models/field_diagnostic.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,8 +15,9 @@ import 'package:next_harvest_frontend/features/areas/view/area_drawing_layer.dar
 class RecordingAreaRepository implements AreasRepository {
   final requests = <CreateAreaRequest>[];
   @override
-  Future<void> createArea(CreateAreaRequest request) async {
+  Future<FieldDiagnostic> createArea(CreateAreaRequest request) async {
     requests.add(request);
+    return const FieldDiagnostic(fieldId: 'created', placeholder: true);
   }
 }
 

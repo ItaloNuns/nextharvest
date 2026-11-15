@@ -1,5 +1,6 @@
 import '../models/create_area_request.dart';
+import '../../diagnostics/models/field_diagnostic.dart';
 
 abstract class AreasRepository {
-  Future<void> createArea(CreateAreaRequest request);
+  Future<FieldDiagnostic> createArea(CreateAreaRequest request);
 }

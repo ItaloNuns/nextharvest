@@ -1,5 +1,6 @@
 import '../models/area_vertex.dart';
 import 'area_draft_status.dart';
+import '../../diagnostics/models/field_diagnostic.dart';
 
 class AreaDraftState {
   const AreaDraftState({
@@ -8,12 +9,14 @@ class AreaDraftState {
     this.error,
     this.name = '',
     this.currentCrop = '',
+    this.analysis,
   });
 
   final AreaDraftStatus status;
   final List<AreaVertex> vertices;
   final String? error;
   final String name, currentCrop;
+  final FieldDiagnostic? analysis;
   bool get isEditable =>
       status == AreaDraftStatus.drawing || status == AreaDraftStatus.closed;
   bool get isSaving => status == AreaDraftStatus.saving;
@@ -31,5 +34,6 @@ class AreaDraftState {
     error: identical(error, _unset) ? this.error : error as String?,
     name: name ?? this.name,
     currentCrop: currentCrop ?? this.currentCrop,
+    analysis: analysis,
   );
 }

@@ -105,9 +105,11 @@ class AreaDraftViewModel extends Notifier<AreaDraftState> {
       currentCrop: currentCrop.trim(),
     );
     try {
-      await ref.read(areasRepositoryProvider).createArea(request);
+      final analysis = await ref
+          .read(areasRepositoryProvider)
+          .createArea(request);
       if (!ref.mounted) return false;
-      state = const AreaDraftState(status: AreaDraftStatus.saved);
+      state = AreaDraftState(status: AreaDraftStatus.saved, analysis: analysis);
       return true;
     } on AreaServiceNotConfigured {
       if (ref.mounted) {

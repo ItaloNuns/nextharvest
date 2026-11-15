@@ -1,4 +1,5 @@
 import 'diagnostic_summary.dart';
+import 'field_health.dart';
 
 class FieldDiagnostic {
   const FieldDiagnostic({
@@ -6,6 +7,9 @@ class FieldDiagnostic {
     required this.placeholder,
     this.message,
     this.summary,
+    this.name,
+    this.currentCrop,
+    this.health,
   });
 
   factory FieldDiagnostic.fromJson(Map<String, dynamic> json) {
@@ -17,6 +21,13 @@ class FieldDiagnostic {
     return FieldDiagnostic(
       fieldId: id,
       placeholder: placeholder,
+      name: json['name'] as String?,
+      currentCrop: json['current_crop'] as String?,
+      health: json['health'] == null
+          ? null
+          : FieldHealth.fromJson(
+              Map<String, dynamic>.from(json['health'] as Map),
+            ),
       message: json['message'] as String?,
       summary: json['summary'] == null
           ? null
@@ -30,4 +41,7 @@ class FieldDiagnostic {
   final bool placeholder;
   final String? message;
   final DiagnosticSummary? summary;
+  final String? name;
+  final String? currentCrop;
+  final FieldHealth? health;
 }

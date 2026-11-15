@@ -26,7 +26,7 @@ class DiagnosticSection extends StatelessWidget {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           key: PageStorageKey<String>('diagnostic-section-$title'),
-          initiallyExpanded: true,
+          initiallyExpanded: false,
           maintainState: true,
           shape: shape,
           collapsedShape: shape,

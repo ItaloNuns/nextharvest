@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:next_harvest_frontend/features/diagnostics/models/field_diagnostic.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,12 +27,13 @@ class FakeAreasRepository implements AreasRepository {
   Completer<void>? pending;
   bool fail = false;
   @override
-  Future<void> createArea(CreateAreaRequest request) async {
+  Future<FieldDiagnostic> createArea(CreateAreaRequest request) async {
     requests.add(request);
     if (fail) {
       throw DioException(requestOptions: RequestOptions(path: '/areas'));
     }
     await pending?.future;
+    return const FieldDiagnostic(fieldId: 'created', placeholder: true);
   }
 }
 
@@ -47,7 +49,7 @@ class AreaAdapter implements HttpClientAdapter {
     calls++;
     lastRequest = options;
     return ResponseBody.fromString(
-      '{"id":1}',
+      '{"field_id":"created","placeholder":true,"health":{"overall":"ok","data_quality":"ok","dimensions":[]}}',
       201,
       headers: {
         Headers.contentTypeHeader: ['application/json'],
@@ -223,6 +225,7 @@ void main() {
       expect(saved.vertices, isEmpty);
       expect(saved.name, isEmpty);
       expect(saved.currentCrop, isEmpty);
+      expect(saved.analysis!.fieldId, 'created');
       expect(saved.error, isNull);
       expect(repository.requests.single.vertices, hasLength(4));
       notifier.startDrawing();
@@ -328,10 +331,12 @@ void main() {
         throwsA(isA<AreaServiceNotConfigured>()),
       );
       expect(adapter.calls, 0);
-      await AreasRepositoryImpl(
+      final analysis = await AreasRepositoryImpl(
         dio,
         createPath: '/api/v1/fields/analyze',
       ).createArea(request);
+      expect(analysis.health!.overall, 'ok');
+      expect(analysis.health!.dataQuality, 'ok');
       expect(adapter.calls, 1);
       expect(adapter.lastRequest!.method, 'POST');
       expect(adapter.lastRequest!.uri.path, '/api/v1/fields/analyze');

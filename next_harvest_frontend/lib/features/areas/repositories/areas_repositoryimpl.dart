@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/create_area_request.dart';
 import 'areas_repository.dart';
+import '../../diagnostics/models/field_diagnostic.dart';
 
 class AreaServiceNotConfigured implements Exception {}
 
@@ -11,7 +12,7 @@ class AreasRepositoryImpl implements AreasRepository {
   final String createPath;
 
   @override
-  Future<void> createArea(CreateAreaRequest request) async {
+  Future<FieldDiagnostic> createArea(CreateAreaRequest request) async {
     if (createPath.trim().isEmpty) throw AreaServiceNotConfigured();
     final base = Uri.parse(_dio.options.baseUrl);
     final directory = base.replace(
@@ -32,5 +33,8 @@ class AreasRepositoryImpl implements AreasRepository {
         type: DioExceptionType.badResponse,
       );
     }
+    return FieldDiagnostic.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 }

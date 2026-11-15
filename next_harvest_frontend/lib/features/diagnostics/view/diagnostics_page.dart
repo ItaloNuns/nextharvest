@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../areas/models/field.dart';
 import '../providers/diagnostics_viewmodel_provider.dart';
 import 'widgets/diagnostic_summary_view.dart';
+import 'widgets/field_health_view.dart';
 
 class DiagnosticsPage extends ConsumerWidget {
   const DiagnosticsPage({super.key, required this.field});
@@ -14,6 +15,7 @@ class DiagnosticsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = diagnosticsViewModelProvider(field.id);
     final state = ref.watch(provider);
+    final currentCrop = state.asData?.value.currentCrop ?? field.currentCrop;
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Field diagnostic')),
@@ -34,7 +36,7 @@ class DiagnosticsPage extends ConsumerWidget {
                 padding: const EdgeInsets.all(24),
                 children: [
                   Text(
-                    field.name,
+                    state.asData?.value.name ?? field.name,
                     style: GoogleFonts.ibmPlexSansThai(
                       textStyle: theme.textTheme.headlineMedium,
                       fontWeight: FontWeight.w500,
@@ -42,7 +44,7 @@ class DiagnosticsPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Current Crop: ${field.currentCrop.isEmpty ? 'Not specified' : field.currentCrop}',
+                    'Current Crop: ${currentCrop.isEmpty ? 'Not specified' : currentCrop}',
                     style: GoogleFonts.inter(
                       textStyle: theme.textTheme.bodyMedium,
                     ),
@@ -95,6 +97,8 @@ class DiagnosticsPage extends ConsumerWidget {
                         DiagnosticSummaryView(summary: diagnostic.summary!)
                       else
                         const Text('Diagnostic summary is not available yet.'),
+                      if (diagnostic.health != null)
+                        FieldHealthView(health: diagnostic.health!),
                     ],
                   ),
                 ],

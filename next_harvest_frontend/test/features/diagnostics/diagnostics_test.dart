@@ -11,9 +11,20 @@ import 'package:next_harvest_frontend/features/diagnostics/providers/diagnostics
 import 'package:next_harvest_frontend/features/diagnostics/repositories/diagnostics_repository.dart';
 import 'package:next_harvest_frontend/features/diagnostics/repositories/diagnostics_repositoryimpl.dart';
 import 'package:next_harvest_frontend/features/diagnostics/view/widgets/diagnostic_summary_view.dart';
+import 'package:next_harvest_frontend/features/diagnostics/view/widgets/field_health_view.dart';
 
 Map<String, dynamic> payload(String id) => {
   'field_id': id,
+  'name': 'Nevada Farm',
+  'current_crop': 'Alfalfa',
+  'health': {
+    'overall': 'ok',
+    'data_quality': 'ok',
+    'dimensions': [
+      {'id': 'water', 'status': 'ok', 'label': 'Water balance'},
+      {'id': 'soil', 'status': 'new_status', 'label': 'Soil conditions'},
+    ],
+  },
   'placeholder': true,
   'message': 'Diagnostic pending validation.',
   'summary': {
@@ -79,6 +90,12 @@ void main() {
     () {
       final diagnostic = FieldDiagnostic.fromJson(payload('1'));
       expect(diagnostic.placeholder, isTrue);
+      expect(diagnostic.name, 'Nevada Farm');
+      expect(diagnostic.currentCrop, 'Alfalfa');
+      expect(diagnostic.health!.overall, 'ok');
+      expect(diagnostic.health!.dataQuality, 'ok');
+      expect(diagnostic.health!.dimensions.first.id, 'water');
+      expect(diagnostic.health!.dimensions.last.status, 'new_status');
       expect(diagnostic.message, 'Diagnostic pending validation.');
       final summary = diagnostic.summary!;
       expect(summary.annualPrecipMm, 420.0);
@@ -96,6 +113,7 @@ void main() {
       });
       expect(missing.summary!.annualPrecipMm, isNull);
       expect(missing.summary!.soilProfile, isNull);
+      expect(missing.health, isNull);
     },
   );
 
@@ -154,6 +172,33 @@ void main() {
   );
 
   testWidgets(
+    'Health displays server statuses and dimensions without inventing classifications',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: FieldHealthView(
+                health: FieldDiagnostic.fromJson(payload('1')).health!,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Field health'), findsOneWidget);
+      expect(find.text('Overall'), findsNothing);
+      await tester.tap(find.text('Field health'));
+      await tester.pumpAndSettle();
+      expect(find.text('Overall'), findsOneWidget);
+      expect(find.text('Data quality'), findsOneWidget);
+      expect(find.text('Water and climate'), findsOneWidget);
+      expect(find.text('OK'), findsNWidgets(3));
+      expect(find.text('Unknown'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Summary displays units, zero, negative values and missing data',
     (tester) async {
       await tester.pumpWidget(
@@ -167,6 +212,16 @@ void main() {
           ),
         ),
       );
+      expect(find.text('420 mm'), findsNothing);
+      for (final title in [
+        'Water and climate',
+        'Bare-field months',
+        'Soil profile',
+      ]) {
+        await tester.ensureVisible(find.text(title));
+        await tester.tap(find.text(title));
+        await tester.pumpAndSettle();
+      }
       expect(find.text('420 mm'), findsOneWidget);
       expect(find.text('650.5 mm'), findsOneWidget);
       expect(find.text('0 mm'), findsOneWidget);
