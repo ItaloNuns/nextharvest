@@ -107,7 +107,7 @@ class AreaDraftViewModel extends Notifier<AreaDraftState> {
     try {
       await ref.read(areasRepositoryProvider).createArea(request);
       if (!ref.mounted) return false;
-      state = state.copyWith(status: AreaDraftStatus.saved);
+      state = const AreaDraftState(status: AreaDraftStatus.saved);
       return true;
     } on AreaServiceNotConfigured {
       if (ref.mounted) {

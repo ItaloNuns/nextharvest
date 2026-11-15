@@ -205,6 +205,36 @@ void main() {
     },
   );
 
+  test(
+    'Successful submission clears the draft and allows a new area',
+    () async {
+      final repository = FakeAreasRepository();
+      final container = ProviderContainer.test(
+        overrides: [areasRepositoryProvider.overrideWithValue(repository)],
+      );
+      final notifier = container.read(areaDraftViewModelProvider.notifier);
+      drawSquare(notifier);
+      notifier.closePolygon();
+      expect(
+        await notifier.save(name: 'Nevada', currentCrop: 'Alfalfa'),
+        isTrue,
+      );
+      final saved = container.read(areaDraftViewModelProvider);
+      expect(saved.vertices, isEmpty);
+      expect(saved.name, isEmpty);
+      expect(saved.currentCrop, isEmpty);
+      expect(saved.error, isNull);
+      expect(repository.requests.single.vertices, hasLength(4));
+      notifier.startDrawing();
+      notifier.addVertex(40, -119);
+      expect(container.read(areaDraftViewModelProvider).vertices, hasLength(1));
+      expect(
+        container.read(areaDraftViewModelProvider).status,
+        AreaDraftStatus.drawing,
+      );
+    },
+  );
+
   test('Arrastar ou excluir área fechada exige fechar novamente', () async {
     final repository = FakeAreasRepository();
     final container = ProviderContainer.test(
