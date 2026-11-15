@@ -34,7 +34,7 @@ class _MapReferencesOverlayState extends State<MapReferencesOverlay> {
       urlTemplate: widget.layer.urlTemplate,
       tileProvider: _provider,
       tileBounds: widget.bounds,
-      minZoom: 5,
+      minZoom: 6,
       maxNativeZoom: widget.layer.maxNativeZoom,
       panBuffer: 0,
       keepBuffer: 1,

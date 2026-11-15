@@ -149,10 +149,11 @@ class MapRepositoryImpl implements MapRepository {
           urlTemplate: regionalAerialUrl,
         ),
       ],
-      maxNativeZoom: 19,
+      // Conservative shared ceiling for USDA and regional NAIP Plus imagery.
+      maxNativeZoom: 18,
       attribution:
           'USDA Farm Production and Conservation · NAIP\n'
-          'Colorado e Washington: NAIP Plus · USDA FPAC / USFS GTAC / DOI GeoPlatform',
+          'Colorado and Washington: NAIP Plus · USDA FPAC / USFS GTAC / DOI GeoPlatform',
       license: 'Source: USDA NAIP · dates and resolution vary by location',
     );
   }

@@ -174,7 +174,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
                     const SizedBox(height: 12),
                   ],
                   const Text(
-                    'Synthetic Intelligence (SI) can make mistakes. '
+                    'Super Intelligence can make mistakes. '
                     'An on-site assessment by a qualified specialist is indispensable.',
                   ),
                   const SizedBox(height: 20),

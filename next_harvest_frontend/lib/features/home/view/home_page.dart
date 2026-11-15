@@ -10,6 +10,7 @@ import '../../areas/view/delete_field_dialog.dart';
 import '../../areas/viewmodel/fields_viewmodel.dart';
 import '../../diagnostics/view/diagnostics_page.dart';
 import '../../settings/view/settings_page.dart';
+import '../../about/view/about_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -197,6 +198,17 @@ class _HomeDrawer extends ConsumerWidget {
                 navigator.pop();
                 navigator.push(
                   MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('About'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(
+                  MaterialPageRoute<void>(builder: (_) => const AboutPage()),
                 );
               },
             ),

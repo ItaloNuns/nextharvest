@@ -36,5 +36,5 @@ class SatelliteMapLayer {
   final String attribution;
   final String license;
 
-  double get initialZoom => source == MapSource.aerial ? 17 : 12;
+  double get initialZoom => 6;
 }

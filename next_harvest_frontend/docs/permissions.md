@@ -11,12 +11,13 @@ do not call `permission_handler` directly outside this module.
   together, allowing approximate access. iOS declares only
   `NSLocationWhenInUseUsageDescription`. Background location is not enabled.
 - Location access is requested only after the user taps **Allow location** in
-  Settings. Opening the app or Settings only checks existing status.
+  Settings or **My location** on the map. Opening the app or Settings only checks existing status.
 - Permanently denied access is managed through **Open app settings**. Returning
   to the app refreshes the status. Restricted access is shown without a prompt.
 - Permission grants are checked with the OS, never stored as app preferences.
-- The map still uses manual positioning. This prepares permission handling for
-  a future **My location** feature; it does not collect coordinates.
+- **My location** obtains a single position with geolocator and recenters the map.
+  It does not subscribe to continuous or background updates. Coordinates are not
+  sent to the backend. Positions outside the map's contiguous-US coverage show a message.
 
 ## Native configuration
 
@@ -33,6 +34,12 @@ This project uses Swift Package Manager for iOS. The installed
 no Podfile is needed. Build with `flutter build ios` on macOS so discovery runs
 from the Flutter project. For Xcode GUI builds, follow the plugin's explicit
 `PERMISSION_HANDLER_INFO_PLIST` setup if package discovery cannot find the plist.
+
+For foreground-only geolocator with Swift Package Manager, run iOS commands with
+`BYPASS_PERMISSION_LOCATION_ALWAYS=1`, e.g. `sh tool/flutter_ios.sh build ios` or
+`sh tool/flutter_ios.sh run -d <ios-device>`. For Xcode GUI builds, set that
+environment variable for the Xcode process before resolving packages. This keeps
+the plugin's Always-authorization code out of the iOS build.
 
 After adding a permission, update the catalog, required native declarations and
 tests, then fully rebuild the application. iOS prompts follow the device language;

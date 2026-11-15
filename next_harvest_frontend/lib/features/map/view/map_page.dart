@@ -12,6 +12,8 @@ import '../services/map_tile_provider.dart';
 import '../state/map_state.dart';
 import '../state/map_status.dart';
 import 'map_references_overlay.dart';
+import 'my_location_button.dart';
+import '../models/map_coverage.dart';
 import '../../areas/models/area_vertex.dart';
 import '../../areas/providers/area_draft_viewmodel_provider.dart';
 import '../../areas/state/area_draft_status.dart';
@@ -32,6 +34,7 @@ class _MapPageState extends ConsumerState<MapPage> {
   final _mapController = MapController();
   MapTileProvider? _tileProvider;
   int _providerRevision = -1;
+  LatLng? _userLocation;
 
   @override
   void initState() {
@@ -45,14 +48,6 @@ class _MapPageState extends ConsumerState<MapPage> {
   void dispose() {
     _mapController.dispose();
     super.dispose();
-  }
-
-  void _zoom(double delta, int maxZoom) {
-    final camera = _mapController.camera;
-    _mapController.move(
-      camera.center,
-      (camera.zoom + delta).clamp(5.0, maxZoom.toDouble()),
-    );
   }
 
   Future<void> _showAreaDetails() => showModalBottomSheet<void>(
@@ -131,8 +126,10 @@ class _MapPageState extends ConsumerState<MapPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final camera = _mapController.camera;
-        var zoom = camera.zoom.clamp(5.0, next.layer!.maxNativeZoom.toDouble());
-        if (next.layer!.source == MapSource.aerial && zoom < 16) zoom = 17;
+        final zoom = camera.zoom.clamp(
+          6.0,
+          next.layer!.maxNativeZoom.toDouble(),
+        );
         _mapController.move(camera.center, zoom);
       });
     });
@@ -190,17 +187,17 @@ class _MapPageState extends ConsumerState<MapPage> {
     }
     final colors = Theme.of(context).colorScheme;
     final bounds = LatLngBounds(
-      const LatLng(24.4, -125),
-      const LatLng(49.5, -66.9),
+      const LatLng(MapCoverage.south, MapCoverage.west),
+      const LatLng(MapCoverage.north, MapCoverage.east),
     );
     return Stack(
       children: [
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
-            initialCenter: const LatLng(39.1, -98.3),
+            initialCenter: const LatLng(39.8, -98.6),
             initialZoom: layer.initialZoom,
-            minZoom: 5,
+            minZoom: 6,
             maxZoom: layer.maxNativeZoom.toDouble(),
             cameraConstraint: CameraConstraint.containCenter(bounds: bounds),
             backgroundColor: colors.surfaceContainerHighest,
@@ -251,6 +248,28 @@ class _MapPageState extends ConsumerState<MapPage> {
                     .read(mapViewModelProvider.notifier)
                     .reportReferenceError(state.referenceRevision),
               ),
+            if (_userLocation != null)
+              IgnorePointer(
+                child: MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _userLocation!,
+                      width: 24,
+                      height: 24,
+                      child: Semantics(
+                        label: 'Your location',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.surface, width: 3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             AreaDrawingLayer(
               mapController: _mapController,
               onVertexTap: _onVertexTap,
@@ -300,20 +319,15 @@ class _MapPageState extends ConsumerState<MapPage> {
             elevation: 3,
             color: colors.surface,
             borderRadius: BorderRadius.circular(8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Zoom in',
-                  onPressed: () => _zoom(1, layer.maxNativeZoom),
-                  icon: const Icon(Icons.add),
-                ),
-                IconButton(
-                  tooltip: 'Zoom out',
-                  onPressed: () => _zoom(-1, layer.maxNativeZoom),
-                  icon: const Icon(Icons.remove),
-                ),
-              ],
+            child: MyLocationButton(
+              onLocated: (location) {
+                final point = LatLng(location.latitude, location.longitude);
+                setState(() => _userLocation = point);
+                _mapController.move(
+                  point,
+                  16.0.clamp(6.0, layer.maxNativeZoom.toDouble()),
+                );
+              },
             ),
           ),
         ),
