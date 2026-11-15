@@ -17,6 +17,12 @@ Map<String, dynamic> payload(String id) => {
   'field_id': id,
   'name': 'Nevada Farm',
   'current_crop': 'Alfalfa',
+  'analysis_meta': {
+    'climate_ok': true,
+    'soil_ok': false,
+    'et_source': 'openet',
+    'failures': [],
+  },
   'health': {
     'overall': 'ok',
     'data_quality': 'ok',
@@ -93,6 +99,10 @@ void main() {
       expect(diagnostic.placeholder, isTrue);
       expect(diagnostic.name, 'Nevada Farm');
       expect(diagnostic.currentCrop, 'Alfalfa');
+      expect(diagnostic.analysisMeta!.climateOk, isTrue);
+      expect(diagnostic.analysisMeta!.soilOk, isFalse);
+      expect(diagnostic.analysisMeta!.etSource, 'openet');
+      expect(diagnostic.analysisMeta!.failures, isEmpty);
       expect(diagnostic.health!.overall, 'ok');
       expect(diagnostic.health!.dataQuality, 'ok');
       expect(diagnostic.health!.dimensions.first.id, 'water');
@@ -117,6 +127,7 @@ void main() {
       expect(missing.summary!.soilProfile, isNull);
       expect(missing.summary!.rootzoneSource, isNull);
       expect(missing.health, isNull);
+      expect(missing.analysisMeta, isNull);
     },
   );
 
