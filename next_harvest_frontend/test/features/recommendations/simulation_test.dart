@@ -13,6 +13,30 @@ import 'package:next_harvest_frontend/features/recommendations/repositories/reco
 import 'package:next_harvest_frontend/features/recommendations/view/recommendation_results_page.dart';
 
 import 'rotation_recommendation_test.dart' show response;
+import 'package:next_harvest_frontend/features/scenarios/models/scenario_request.dart';
+import 'package:next_harvest_frontend/features/scenarios/models/scenario_result.dart';
+import 'package:next_harvest_frontend/features/scenarios/providers/scenarios_repository_provider.dart';
+import 'package:next_harvest_frontend/features/scenarios/repositories/scenarios_repository.dart';
+
+class ScenarioUpdatesRepository implements ScenariosRepository {
+  final requests = <ScenarioRequest>[];
+  @override
+  Future<ScenarioResult> simulate(ScenarioRequest request) async {
+    requests.add(request);
+    final strategies = response()['strategies'] as List;
+    for (var i = 0; i < strategies.length; i++) {
+      strategies[i]['name'] = 'Scenario $i';
+    }
+    return ScenarioResult.fromJson({
+      'field_id': request.preferences.fieldId,
+      'delta_precip_pct': request.deltaPrecipPct,
+      'delta_temp_c': request.deltaTempC,
+      'placeholder': false,
+      'message': 'Scenario ready',
+      'strategies': strategies,
+    });
+  }
+}
 
 class SimulationAdapter implements HttpClientAdapter {
   RequestOptions? request;
@@ -50,6 +74,70 @@ class SimulationRepository implements RecommendationsRepository {
 }
 
 void main() {
+  testWidgets(
+    'Pinned scenario switch replaces all options and restores original recommendations',
+    (tester) async {
+      final repository = SimulationRepository()..fail = false;
+      final scenarios = ScenarioUpdatesRepository();
+      final request = RecommendationRequest(
+        fieldId: 'field-1',
+        machinery: ['Tractor'],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            recommendationsRepositoryProvider.overrideWithValue(repository),
+            scenariosRepositoryProvider.overrideWithValue(scenarios),
+          ],
+          child: MaterialApp(
+            home: RecommendationResultsPage(
+              request: request,
+              fieldName: 'Farm',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Simulate Scenario'), findsNothing);
+      await tester.tap(find.text('Climate scenario'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('scenario-precipitation')),
+        '-25',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('scenario-temperature')),
+        '2',
+      );
+      final button = find.widgetWithText(FilledButton, 'Simulate Scenario');
+      await tester.scrollUntilVisible(
+        button,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Scenario 0'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Scenario 0'), findsOneWidget);
+      expect(find.text('Rotation 0'), findsNothing);
+      expect(find.text('Climate scenario').hitTestable(), findsOneWidget);
+      expect(scenarios.requests.single.preferences.machinery, ['Tractor']);
+      expect(scenarios.requests.single.deltaPrecipPct, -25);
+      expect(scenarios.requests.single.deltaTempC, 2);
+      await tester.tap(find.text('Climate scenario'));
+      await tester.pumpAndSettle();
+      expect(find.text('Rotation 0'), findsOneWidget);
+      expect(find.text('Scenario 0'), findsNothing);
+      expect(repository.calls, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
   test(
     'Simulation sends exact POST URL and JSON, then decodes returned options',
     () async {
