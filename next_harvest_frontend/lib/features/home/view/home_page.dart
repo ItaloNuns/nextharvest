@@ -8,6 +8,7 @@ import '../../areas/providers/area_draft_viewmodel_provider.dart';
 import '../../areas/view/field_card.dart';
 import '../../areas/viewmodel/fields_viewmodel.dart';
 import '../../diagnostics/view/diagnostics_page.dart';
+import '../../settings/view/settings_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -162,11 +163,16 @@ class _HomeDrawer extends ConsumerWidget {
               onTap: () => Navigator.of(context).pop(),
             ),
             const Divider(),
-            const ListTile(
-              leading: Icon(Icons.settings_outlined),
-              title: Text('Settings'),
-              subtitle: Text('Coming soon'),
-              enabled: false,
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Settings'),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(
+                  MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.logout),

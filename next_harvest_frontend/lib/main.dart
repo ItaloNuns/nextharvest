@@ -8,6 +8,7 @@ import 'features/authentication/view/auth_page.dart';
 import 'features/authentication/view/splash_page.dart';
 import 'features/authentication/providers/session_bootstrap_provider.dart';
 import 'theme.dart';
+import 'features/settings/viewmodel/theme_viewmodel.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +31,8 @@ class MyApp extends ConsumerWidget {
       title: 'Next Harvest',
       theme: NextHarvestTheme.light(),
       darkTheme: NextHarvestTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode:
+          ref.watch(themeViewModelProvider).asData?.value ?? ThemeMode.system,
       home: startup.when(
         skipLoadingOnRefresh: false,
         loading: () => const SplashPage(),
