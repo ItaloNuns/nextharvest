@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../map/view/map_page.dart';
+import '../../authentication/providers/auth_session_provider.dart';
+import '../../areas/providers/area_draft_viewmodel_provider.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -57,12 +60,13 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _HomeDrawer extends StatelessWidget {
+class _HomeDrawer extends ConsumerWidget {
   const _HomeDrawer();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final user = ref.watch(authSessionProvider)?.user;
 
     return Drawer(
       child: SafeArea(
@@ -77,14 +81,14 @@ class _HomeDrawer extends StatelessWidget {
               currentAccountPicture: CircleAvatar(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
-                child: const Text('AS'),
+                child: const Icon(Icons.person_outline),
               ),
               accountName: Text(
-                'Alex Smith',
+                user?.email.split('@').first ?? '',
                 style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
               ),
               accountEmail: Text(
-                'alex.smith@example.com',
+                user?.email ?? '',
                 style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
               ),
             ),
@@ -101,6 +105,25 @@ class _HomeDrawer extends StatelessWidget {
               title: Text('Settings'),
               subtitle: Text('Coming soon'),
               enabled: false,
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign out'),
+              onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                ref.invalidate(areaDraftViewModelProvider);
+                try {
+                  await ref.read(authSessionProvider.notifier).signOut();
+                } catch (_) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Unable to clear the saved session on this device.',
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
           ],
         ),

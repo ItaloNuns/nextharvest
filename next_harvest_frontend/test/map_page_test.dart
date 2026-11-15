@@ -7,7 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:next_harvest_frontend/features/map/models/satellite_map_layer.dart';
 import 'package:next_harvest_frontend/features/map/providers/map_repository_provider.dart';
 import 'package:next_harvest_frontend/features/map/repositories/map_repository.dart';
-import 'package:next_harvest_frontend/main.dart';
+import 'package:flutter/material.dart';
+import 'package:next_harvest_frontend/features/map/view/map_page.dart';
 
 class FailingMapRepository implements MapRepository {
   @override
@@ -30,7 +31,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [mapRepositoryProvider.overrideWithValue(repository)],
-        child: const MyApp(),
+        child: const MaterialApp(home: MapPage()),
       ),
     );
     await tester.pump();
