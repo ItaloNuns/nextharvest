@@ -71,12 +71,15 @@ O diagrama acima mistura **visão de produto** (grade 30 m, RAG Gemini) com o **
 
 | Área | Status atual (código) |
 | :--- | :--- |
-| Auth JWT + bcrypt | Tabela `users`; `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
+| Auth JWT + bcrypt | Tabela `users` (`name`, `email`, hash); `POST /auth/register`, `POST /auth/login`, `GET /auth/me` (devolve `id`, `name`, `email`) |
 | Ownership | `fields.user_id` — só o dono acessa analyze, diagnostics, recommend, simulate |
 | Fluxo MVP | Register/login → Analyze → Recommend → Simulate (reenviar `priorities`) |
-| OpenAI + RAG | Recommend reescreve os 5 campos se `OPENAI_API_KEY`; senão templates |
+| Diagnóstico `health` | Objeto derivado em **analyze** e **GET diagnostics**: `overall`, `data_quality`, dimensões `water` / `soil` / `sources` (`ok` \| `warning` \| `critical`); **não** persiste no banco |
+| OpenAI + RAG | Recommend reescreve os 5 campos se `OPENAI_API_KEY`; senão templates; `.env` carregado de `backend/` (independente do cwd do uvicorn) |
+| NASS (condado) | FCC devolve `Churchill County`; QuickStats recebe nome normalizado (`CHURCHILL`) + retry ano anterior |
 | Público | `GET /health`, `GET /glossary/explain` |
-| Ainda planejado | Sessão/cache Redis, refresh token, AMS/SMAP reais, glossário LLM, grade 30 m |
+| Resumo harmonizado MVP | Precip/ET/solo SSURGO; `smap_rootzone_anomaly_z` e `bare_field_months` ainda **zerados/vazios** até integrar SMAP/óptica |
+| Ainda planejado | Sessão/cache Redis, refresh token, AMS/SMAP reais, glossário LLM, grade 30 m, timeline solo nu |
 
 Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção **Auth**).
 
@@ -90,7 +93,7 @@ Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção 
 
 ### 3.2. Arquitetura de Telas e Fluxo de Usuário
 0. **Tela 0 — Conta do produtor (*Auth*):**
-   * Register / Login (`POST /api/v1/auth/register` ou `/login`) → guardar `access_token` em *secure storage* (Keychain / Keystore).
+   * Register / Login (`POST /api/v1/auth/register` com `name`, `email`, `password` ou `/login`) → guardar `access_token` em *secure storage* (Keychain / Keystore). `GET /auth/me` e o objeto `user` no token trazem `name` para saudação no app.
    * Enviar `Authorization: Bearer <access_token>` em **analyze**, **diagnostics**, **recommend** e **simulate**.
    * `GET /api/v1/fields/` recupera a lista de talhões do usuário (útil em novo aparelho ou após reinstalar o app).
    * O mesmo objeto `priorities` dos sliders deve ir no **Recommend** e de novo no **Simulate** (ver [backend/README.md](backend/README.md)).
@@ -107,9 +110,8 @@ Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção 
      * 💰 *Rentabilidade e Liquidez no Mercado Local*
    * Filtros de restrição: Possui irrigação? Qual maquinário possui (plantio de grãos, fenação, tubérculos)?
 3. **Tela 3 — Diagnóstico Ambiental por Satélite (*Field Health & Bare-Soil Timeline*):**
-   * **Linha do Tempo Anual (12 meses):** Mostra visualmente em quais meses o campo fica com **solo exposto (*bare field*)**, em quais semanas ocorre **pico de estresse térmico/hídrico** (ECOSTRESS/OpenET) e o risco de **geada tardia/precoce** (NASA POWER / PRISM).
-   * **Mapa de Vulnerabilidade do Talhão:** Alterna camadas de declividade/erosão (SRTM + SSURGO), vigor vegetativo (Sentinel-2/Landsat NDVI) e anomalia de umidade (SMAP).
-   * **Botão "Satélite vs. Solo":** Modal educativo explicando a diferença entre a observação orbital da NASA e a amostragem física de solo na fazenda.
+   * **MVP API (hoje):** usar `health` de **analyze** / **diagnostics** para semáforos (água, solo, completude das fontes) + cartões com `summary` e `placeholder`. Chips mapeiam `ok` / `warning` / `critical` para cores.
+   * **Roadmap visual:** linha do tempo anual (solo exposto), mapa de camadas NDVI/SMAP/SRTM e modal *Satélite vs. Solo* (ainda não alimentados pelo backend de produção).
 4. **Tela 4 — Comparador de Estratégias de Rotação ($\ge 3$ Cenários) + Simulador:**
    * Exibe **3 ou mais cartões comparativos**:
      * **Estratégia A (Atual / Baseline):** Ex.: *Monocultura ou Rotação Atual (Milho → Milho)*.
@@ -139,6 +141,8 @@ Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção 
 A página do desafio enfatiza: *"You may consider harmonizing datasets with different spatial and temporal resolutions by downsampling, aggregating, or resampling them to a common analysis grid."*
 
 No **NextHarvest**, o `GeoHarmonizerService` executa a fusão em duas dimensões:
+
+> **MVP implementado:** fusão **ao nível do talhão** — centroide (POWER), polígono SSURGO e ET OpenET/POWER no polígono; **não** há grade interna de 30 m nem H3 no código atual. O bloco abaixo descreve a **visão alvo** de fusão.
 
 1. **Harmonização Espacial (Ao Nível de Talhão e Sub-zonas de 30 m):**
    * **Unidade Base de Decisão:** O polígono do talhão (dividido internamente em células de **30 m $\times$ 30 m** alinhadas ao Landsat/CDL/SRTM/OpenET).
@@ -176,13 +180,16 @@ backend/
 │   │   ├── nasa_power.py        # Clima, radiação, geada e umidade (JSON direto)
 │   │   ├── nasa_appeears.py     # SMAP, MODIS, VIIRS, ECOSTRESS, SRTM (stub)
 │   │   ├── usda_sda_soils.py    # SSURGO/WSS via SQL/REST (textura, MO, pH, AWC)
-│   │   ├── usda_crops_market.py # NASS QuickStats (+ AMS planejado)
+│   │   ├── usda_crops_market.py # NASS QuickStats (condado FCC + nome normalizado)
+│   │   ├── census_location.py   # FCC: estado/condado a partir do centroide
 │   │   ├── openet_client.py     # Evapotranspiração de talhão
-│   │   └── copernicus_cdse.py   # Sentinel-2 Statistical API (NDVI, NDRE, Bare Soil)
+│   │   └── copernicus_cdse.py   # Sentinel-2 Statistical API (stub)
 │   ├── services/
 │   │   ├── auth.py              # JWT, bcrypt, get_current_user
 │   │   ├── field_lookup.py      # require_owned_field / require_analyzed_field
 │   │   ├── harmonizer.py        # Fusão POWER + SSURGO + OpenET (MVP talhão)
+│   │   ├── market_context.py    # lookup_location + NASS no recommend
+│   │   ├── diagnostic_health.py # health derivado (analyze/diagnostics)
 │   │   ├── rotation_engine.py   # Motor MCDA + Regras Agronômicas
 │   │   ├── agronomic_rag.py     # RAG em memória (snippets NRCS/FAO/NASA)
 │   │   └── ai_explainer.py      # OpenAI structured output no Recommend (Gemini não usado)
@@ -195,20 +202,47 @@ backend/
 
 | Método e Rota | Auth | Descrição (MVP implementado) | Fontes / motor |
 | :--- | :--- | :--- | :--- |
-| `POST /api/v1/auth/register` | Público | Cadastro e-mail + senha; devolve JWT. | PostgreSQL `users` |
-| `POST /api/v1/auth/login` | Público | Login; devolve JWT. | PostgreSQL `users` |
-| `GET /api/v1/auth/me` | Bearer | Usuário do token. | JWT |
+| `POST /api/v1/auth/register` | Público | Cadastro `name` + e-mail + senha; devolve JWT e `user` (`id`, `name`, `email`). | PostgreSQL `users` |
+| `POST /api/v1/auth/login` | Público | Login; devolve JWT e `user` (`id`, `name`, `email`). | PostgreSQL `users` |
+| `GET /api/v1/auth/me` | Bearer | Usuário do token (`id`, `name`, `email`). | JWT |
 | `GET /api/v1/fields/` | Bearer | Lista talhões do usuário (`id`, `name`, `current_crop`). | PostgreSQL |
-| `POST /api/v1/fields/analyze` | Bearer | GeoJSON + cultura; diagnóstico harmonizado; persiste com `user_id`. | NASA POWER, SSURGO (SDA), OpenET (opcional) |
-| `GET /api/v1/diagnostics/{field_id}` | Bearer (dono) | Resumo gravado na última análise. | Dados persistidos |
-| `POST /api/v1/rotations/recommend` | Bearer + `priorities` | **3 estratégias** + explicações estruturadas. | Diagnóstico salvo, FCC condado, NASS (opcional), `RotationEngine` |
-| `POST /api/v1/rotations/simulate` | Bearer | Recálculo em memória com $\Delta$ chuva/temp.; `priorities` opcional na API (demo). | `RotationEngine` + sliders |
+| `POST /api/v1/fields/analyze` | Bearer | GeoJSON + cultura; `summary` + `health`; persiste com `user_id`. | NASA POWER, SSURGO (SDA), OpenET (opcional) |
+| `GET /api/v1/diagnostics/{field_id}` | Bearer (dono) | Resumo persistido + `health` derivado do mesmo `summary`. | Dados persistidos |
+| `POST /api/v1/rotations/recommend` | Bearer + `priorities` | **3 estratégias** + explicações (OpenAI opcional). | Diagnóstico salvo, FCC, NASS (opcional), `RotationEngine`, `AiExplainer` |
+| `POST /api/v1/rotations/simulate` | Bearer | Recálculo com $\Delta$ chuva/temp.; `priorities` com default demo na API; grava `simulations`. | `RotationEngine` + sliders (sem NASS/OpenAI) |
 | `GET /api/v1/glossary/explain` | Público | Glossário estático (RAG/LLM planejado). | Textos locais |
 
 *Roadmap de fontes ainda não ligadas no analyze de produção:* SMAP, CDL, Sentinel/MODIS série temporal, AMS — permanecem na visão de fusão (seções 4.2 e 6).
 
 ### 5.3. Exemplo de Contrato JSON de Saída (`POST /api/v1/rotations/recommend`)
-Este contrato garante 100% de aderência aos critérios de avaliação dos juízes da NASA:
+
+**Referência de produto / juízes** — a **forma** (3 estratégias, 5 campos em `explanation`, radar) é a do MVP. Valores como `smap_rootzone_anomaly_z`, `bare_field_months` preenchidos e citações ECOSTRESS/Sentinel no texto abaixo são **visão alvo**; na API viva, `harmonized_summary` reflete só o que o harmonizer gravou e o LLM/template não inventa fontes ausentes.
+
+Exemplo ilustrativo:
+
+### 5.4. Objeto `health` (analyze e diagnostics) — implementado
+
+Calculado em tempo de resposta (não vai para `last_summary`):
+
+```json
+"health": {
+  "overall": "warning",
+  "data_quality": "ok",
+  "dimensions": [
+    { "id": "water", "status": "warning", "label": "Déficit hídrico elevado (chuva − ET)." },
+    { "id": "soil", "status": "warning", "label": "Matéria orgânica ou fator K de erosão em faixa de atenção." },
+    { "id": "sources", "status": "ok", "label": "Fontes de clima e solo disponíveis." }
+  ]
+}
+```
+
+- `overall`: pior status entre água e solo (agronomia).
+- `data_quality`: dimensão `sources` (completude POWER/SSURGO/ET).
+- No analyze, flags do harmonizer refinam `sources`; no diagnostics só se infere do `summary` + `placeholder`.
+
+### 5.5. Exemplo ilustrativo de recommend (visão Space Apps)
+
+Este JSON **não** é cópia literal da resposta Swagger atual; serve para alinhar expectativas de pitch:
 
 ```json
 {
@@ -301,7 +335,7 @@ Este contrato garante 100% de aderência aos critérios de avaliação dos juíz
 }
 ```
 
-### 5.4. Autenticação e isolamento por produtor (implementado)
+### 5.6. Autenticação e isolamento por produtor (implementado)
 
 Cada talhão pertence a um usuário (`fields.user_id`). Rotas de campo e rotação exigem **JWT** no header `Authorization: Bearer <access_token>`.
 
@@ -400,11 +434,12 @@ A partir do cubo harmonizado de dados da NASA/USDA do talhão, o Estágio 1 calc
 > [!TIP]
 > Para entregar um protótipo funcional, rápido e visualmente impressionante dentro do repositório `nextharvest`:
 > 1. **Backend (`backend/`) — já no código (MVP):**
->    * **NASA POWER**, **USDA SDA (SSURGO)**, **OpenET** (opcional), **FCC Census** + **NASS** (opcional) no fluxo Analyze → Recommend;
->    * **JWT + ownership** (`users`, `fields.user_id`), testes `pytest` incluindo `test_auth.py`;
->    * **Simulate** com sliders de chuva/temperatura em memória.
->    * **OpenAI + RAG** nas explicações do Recommend (`OPENAI_API_KEY` opcional).
->    * *Próximo backend:* AMS, SMAP/AppEEARS, cache Redis, glossário LLM.
+>    * **NASA POWER**, **USDA SDA (SSURGO)**, **OpenET** (opcional), **FCC Census** + **NASS** (opcional, condado normalizado) no fluxo Analyze → Recommend;
+>    * **JWT + ownership** (`users` com `name`, `fields.user_id`), testes `pytest` incluindo `test_auth.py`;
+>    * **`health`** em analyze/diagnostics para semáforos no mobile.
+>    * **Simulate** com sliders de chuva/temperatura; histórico em `simulations`.
+>    * **OpenAI + RAG** nas explicações do Recommend (`OPENAI_API_KEY` opcional; structured output em lista por `strategy_id`).
+>    * *Próximo backend:* AMS, SMAP/AppEEARS, `bare_field_months` reais, cache Redis, glossário LLM.
 > 2. **Frontend/Mobile (`next_harvest_frontend/` ou `frontend/`):**
 >    * **Próximo passo imediato:** Tela de login/register + interceptor HTTP com Bearer; depois mapa do talhão, prioridades, comparador e sliders (seção 3.2).
 >    * Reutilizar contratos em [backend/README.md](backend/README.md) e exemplos OpenAPI em `/docs`.
