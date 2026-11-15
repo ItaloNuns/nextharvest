@@ -46,6 +46,7 @@ def test_recommend_after_analyze(mock_nasa_usda) -> None:
         assert body["location"]["lon"] == pytest.approx(-118.775, abs=1e-3)
         assert body["location"]["state"] == "NV"
         assert body["location"]["county"] == "Churchill"
+        assert body["nass_used"] is bool(get_settings().nass_api_key)
         evidence = " ".join(body["strategies"][0]["explanation"]["supporting_evidence"])
         gaps = " ".join(body["strategies"][0]["explanation"]["information_gaps_and_uncertainty"])
         assert "15.0 mm" in evidence

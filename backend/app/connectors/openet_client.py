@@ -59,6 +59,10 @@ def _as_float(value: Any) -> float | None:
     return number
 
 
+_OPENET_TIMEOUT = 60.0
+_RETRY_STATUSES = {429, 502, 503}
+
+
 class OpenEtClient:
     """Field-scale evapotranspiration. https://openet-api.org/"""
 
@@ -131,10 +135,10 @@ class OpenEtClient:
         if reducer:
             body["reducer"] = reducer
         headers = {"Authorization": self._api_key, "Content-Type": "application/json"}
-        client = self._client or httpx.AsyncClient(timeout=60.0)
+        client = self._client or httpx.AsyncClient(timeout=_OPENET_TIMEOUT)
         close = self._client is None
         try:
-            response = await client.post(url, json=body, headers=headers)
+            response = await self._post_with_retry(client, url, body=body, headers=headers)
         finally:
             if close:
                 await client.aclose()
@@ -144,3 +148,19 @@ class OpenEtClient:
             return response.json()
         except ValueError as exc:
             raise OpenEtError("OpenET returned a non-JSON body") from exc
+
+    async def _post_with_retry(
+        self,
+        client: httpx.AsyncClient,
+        url: str,
+        *,
+        body: dict[str, Any],
+        headers: dict[str, str],
+    ) -> httpx.Response:
+        response: httpx.Response | None = None
+        for attempt in range(2):
+            response = await client.post(url, json=body, headers=headers, timeout=_OPENET_TIMEOUT)
+            if response.status_code not in _RETRY_STATUSES or attempt == 1:
+                break
+        assert response is not None
+        return response

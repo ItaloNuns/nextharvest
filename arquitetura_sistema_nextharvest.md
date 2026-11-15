@@ -79,7 +79,9 @@ O diagrama acima mistura **visão de produto** (grade 30 m, RAG Gemini) com o **
 | NASS (condado) | FCC devolve `Churchill County`; QuickStats recebe nome normalizado (`CHURCHILL`) + retry ano anterior |
 | Público | `GET /health`, `GET /glossary/explain` |
 | Resumo harmonizado MVP | Precip/ET/solo SSURGO; `smap_rootzone_anomaly_z` e `bare_field_months` via **proxy NASA POWER GWETROOT** (`rootzone_source=power_gwetroot`); SMAP/óptica reais ainda roadmap |
-| Meta de fontes | `fields.last_analysis_meta` (climate/soil/ET) para `health.sources` igual no analyze e no diagnostics |
+| Meta de fontes | `analysis_meta` no JSON de analyze/diagnostics (`climate_ok`, `soil_ok`, `et_source`, `failures`); cópia em `fields.last_analysis_meta` (inclui `rootzone_source`) para `health.sources` igual nos dois endpoints |
+| Recommend `nass_used` | Boolean no JSON de `POST /rotations/recommend` (true só se QuickStats devolveu overrides) |
+| Última simulação | `GET /fields/{field_id}/simulations/latest` — envelope `id` + `created_at` + `simulation`; 404 se vazio |
 | Ainda planejado | Sessão/cache Redis, refresh token, AMS/SMAP reais, glossário LLM, grade 30 m, NDVI/SCL de solo nu |
 
 Operação local e Swagger: ver [backend/README.md](backend/README.md) (seção **Auth**).
@@ -172,7 +174,7 @@ backend/
 │   ├── api/
 │   │   └── v1/
 │   │       ├── auth.py          # register, login, me
-│   │       ├── fields.py        # list + analyze (GeoJSON, user_id)
+│   │       ├── fields.py        # list + analyze + última simulação
 │   │       ├── diagnostics.py   # Resumo persistido por talhão (dono)
 │   │       ├── rotations.py     # Geração e comparação de >= 3 rotações
 │   │       ├── simulator.py     # Simulação de cenários climáticos (Sliders)
@@ -191,6 +193,7 @@ backend/
 │   │   ├── harmonizer.py        # Fusão POWER + SSURGO + OpenET (MVP talhão)
 │   │   ├── market_context.py    # lookup_location + NASS no recommend
 │   │   ├── diagnostic_health.py # health derivado (analyze/diagnostics)
+│   │   ├── analysis_meta.py     # analysis_meta no JSON (analyze/diagnostics)
 │   │   ├── rotation_engine.py   # Motor MCDA + Regras Agronômicas
 │   │   ├── agronomic_rag.py     # RAG em memória (snippets NRCS/FAO/NASA)
 │   │   └── ai_explainer.py      # OpenAI structured output no Recommend (Gemini não usado)
@@ -207,9 +210,10 @@ backend/
 | `POST /api/v1/auth/login` | Público | Login; devolve JWT e `user` (`id`, `name`, `email`). | PostgreSQL `users` |
 | `GET /api/v1/auth/me` | Bearer | Usuário do token (`id`, `name`, `email`). | JWT |
 | `GET /api/v1/fields/` | Bearer | Lista talhões do usuário (`id`, `name`, `current_crop`). | PostgreSQL |
-| `POST /api/v1/fields/analyze` | Bearer | GeoJSON + cultura; `summary` + `health`; persiste com `user_id`. | NASA POWER, SSURGO (SDA), OpenET (opcional) |
-| `GET /api/v1/diagnostics/{field_id}` | Bearer (dono) | Resumo persistido + `health` derivado do mesmo `summary`. | Dados persistidos |
-| `POST /api/v1/rotations/recommend` | Bearer + `priorities` | **3 estratégias** + explicações (OpenAI opcional). | Diagnóstico salvo, FCC, NASS (opcional), `RotationEngine`, `AiExplainer` |
+| `POST /api/v1/fields/analyze` | Bearer | GeoJSON + cultura; `summary` + `health` + `analysis_meta`; persiste com `user_id`. | NASA POWER, SSURGO (SDA), OpenET (opcional) |
+| `GET /api/v1/diagnostics/{field_id}` | Bearer (dono) | Resumo persistido + `health` e `analysis_meta`. | Dados persistidos |
+| `GET /api/v1/fields/{field_id}/simulations/latest` | Bearer (dono) | Último simulate gravado; 404 se ainda não houver. | Tabela `simulations` |
+| `POST /api/v1/rotations/recommend` | Bearer + `priorities` | **3 estratégias** + `nass_used` + explicações (OpenAI opcional). | Diagnóstico salvo, FCC, NASS (opcional), `RotationEngine`, `AiExplainer` |
 | `POST /api/v1/rotations/simulate` | Bearer | Recálculo com $\Delta$ chuva/temp.; `priorities` com default demo na API; grava `simulations`. | `RotationEngine` + sliders (sem NASS/OpenAI) |
 | `GET /api/v1/glossary/explain` | Público | Glossário estático (RAG/LLM planejado). | Textos locais |
 
@@ -438,7 +442,7 @@ A partir do cubo harmonizado de dados da NASA/USDA do talhão, o Estágio 1 calc
 >    * **NASA POWER**, **USDA SDA (SSURGO)**, **OpenET** (opcional), **FCC Census** + **NASS** (opcional, condado normalizado) no fluxo Analyze → Recommend;
 >    * **JWT + ownership** (`users` com `name`, `fields.user_id`), testes `pytest` incluindo `test_auth.py`;
 >    * **`health`** em analyze/diagnostics para semáforos no mobile.
->    * **Simulate** com sliders de chuva/temperatura; histórico em `simulations`.
+>    * **Simulate** com sliders de chuva/temperatura; histórico em `simulations`; `GET /fields/{id}/simulations/latest`.
 >    * **OpenAI + RAG** nas explicações do Recommend (`OPENAI_API_KEY` opcional; structured output em lista por `strategy_id`).
 >    * *Próximo backend:* AMS, SMAP/AppEEARS, `bare_field_months` reais, cache Redis, glossário LLM.
 > 2. **Frontend/Mobile (`next_harvest_frontend/` ou `frontend/`):**

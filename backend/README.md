@@ -28,7 +28,7 @@ Documentação: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Saúde
 3. Clique em **Authorize**, cole o token (só o valor, ou `Bearer <token>` conforme o campo) e confirme.
 4. Analyze → Recommend → Simulate usam só os talhões **desse** usuário. Talhões antigos sem `user_id` ficam invisíveis.
 
-O app Flutter deve guardar o token e mandar `Authorization: Bearer <token>` em analyze, diagnostics, recommend e simulate.
+O app Flutter deve guardar o token e mandar `Authorization: Bearer <token>` em analyze, diagnostics, recommend, simulate e na última simulação.
 
 ## Relatório desta feat (Fase 1–2)
 
@@ -38,8 +38,8 @@ O app Flutter deve guardar o token e mandar `Authorization: Bearer <token>` em a
 | 2. NASA POWER | `NasaPowerClient.fetch_point` soma `PRECTOTCORR` do último ano e ignora fill `-999` | `pytest tests/test_nasa_power.py` (mock). Ao vivo: `NEXTHARVEST_LIVE=1 pytest tests/test_nasa_power.py -m live` |
 | 3. USDA SDA | `UsdaSdaSoilsClient.fetch_polygon` consulta SSURGO; fora dos EUA devolve perfil vazio, não 500 | `pytest tests/test_usda_sda.py`. Ao vivo: `NEXTHARVEST_LIVE=1 pytest tests/test_usda_sda.py -m live` |
 | 4. Harmonizer | `GeoHarmonizerService.summarize` chama POWER e SDA em paralelo; uma falha não derruba a outra; GWETROOT preenche Z e meses de solo nu (proxy) | `pytest tests/test_harmonizer.py` |
-| 5. Analyze | `POST /api/v1/fields/analyze` persiste geometria + `last_summary` + `last_analysis_meta`; `placeholder=false` só se clima **e** solo ok | `pytest tests/test_analyze_route.py` ou o POST no `/docs` com o polígono Nevada |
-| 6. Diagnostics | `GET /api/v1/diagnostics/{field_id}` lê o resumo gravado e deriva `health` com a meta persistida | Analyze → copiar `field_id` → GET diagnostics |
+| 5. Analyze | `POST /api/v1/fields/analyze` persiste geometria + `last_summary` + `last_analysis_meta`; JSON inclui `analysis_meta`; `placeholder=false` só se clima **e** solo ok | `pytest tests/test_analyze_route.py` ou o POST no `/docs` com o polígono Nevada |
+| 6. Diagnostics | `GET /api/v1/diagnostics/{field_id}` lê o resumo gravado, deriva `health` e devolve o mesmo `analysis_meta` | Analyze → copiar `field_id` → GET diagnostics |
 
 ## Relatório desta feat (Fase 3 — Recommend)
 
@@ -56,11 +56,11 @@ O app Flutter deve guardar o token e mandar `Authorization: Bearer <token>` em a
 | Etapa | O que foi implementado | Como testar |
 | :--- | :--- | :--- |
 | 1. POWER ET | `EVPTRNS` somado como reserva de ET anual | `pytest tests/test_nasa_power.py` |
-| 2. OpenET | `OpenEtClient` no polígono (fallback ponto); chave em `OPENET_API_KEY` | `pytest tests/test_openet.py`. Ao vivo: `NEXTHARVEST_LIVE=1 pytest tests/test_openet.py -m live` |
+| 2. OpenET | `OpenEtClient` no polígono (fallback ponto); timeout 60s e um retry em 429/502/503; chave em `OPENET_API_KEY` | `pytest tests/test_openet.py`. Ao vivo: `NEXTHARVEST_LIVE=1 pytest tests/test_openet.py -m live` |
 | 3. Harmonizer | Prefere OpenET; se falhar, usa POWER; Analyze persiste o déficit | `pytest tests/test_harmonizer.py tests/test_analyze_route.py` |
 | 4. Condado + NASS | FCC Census (sem chave) + QuickStats se `NASS_API_KEY` | `pytest tests/test_census_location.py tests/test_nass.py` |
-| 5. Recommend | `state`/`county`, textos com ET/NASS honestos | `pytest tests/test_recommend_route.py` |
-| 6. Simulate | Recalcula radar com `delta_precip_pct` e `delta_temp_c`; `priorities` opcional na API (perfil demo se omitir) | `pytest tests/test_simulate_route.py` |
+| 5. Recommend | `state`/`county`, `nass_used` no JSON, textos com ET/NASS honestos | `pytest tests/test_recommend_route.py` |
+| 6. Simulate | Recalcula radar com `delta_precip_pct` e `delta_temp_c`; `priorities` opcional na API (perfil demo se omitir); `GET /fields/{id}/simulations/latest` | `pytest tests/test_simulate_route.py` |
 
 ## Relatório desta feat (IA / RAG — OpenAI no Recommend)
 
@@ -101,7 +101,7 @@ NEXTHARVEST_LIVE=1 pytest -m live
 }
 ```
 
-Pronto quando (Analyze): `placeholder` é `false`, `annual_precip_mm` ≠ 0, `soil_profile.mapunit_name` não vazio, `health.overall` e `health.dimensions` preenchidos, e `GET /diagnostics/{field_id}` devolve o mesmo resumo e o mesmo `health.overall`. Conferência no banco:
+Pronto quando (Analyze): `placeholder` é `false`, `annual_precip_mm` ≠ 0, `soil_profile.mapunit_name` não vazio, `health.overall` e `health.dimensions` preenchidos, `analysis_meta.et_source` é `openet` (com chave) ou `power`, e `GET /diagnostics/{field_id}` devolve o mesmo resumo, o mesmo `health.overall` e o mesmo `analysis_meta`. Conferência no banco:
 
 ```bash
 docker compose exec postgres psql -U nextharvest -d nextharvest -c "SELECT id, name FROM fields;"
@@ -127,7 +127,7 @@ Depois do Analyze, copie o `field_id` e envie:
 }
 ```
 
-Pronto quando (Recommend): `placeholder` é `false`, há **3 estratégias**, a primeira é a baseline da cultura atual, e `harmonized_summary.annual_precip_mm` é o mesmo do diagnostics daquele `field_id`. Com chave OpenET, `annual_et_demand_mm` ≠ 0. Com FCC, `location.county` preenchido (ex.: Churchill).
+Pronto quando (Recommend): `placeholder` é `false`, há **3 estratégias**, a primeira é a baseline da cultura atual, e `harmonized_summary.annual_precip_mm` é o mesmo do diagnostics daquele `field_id`. Com chave OpenET, `annual_et_demand_mm` ≠ 0. Com FCC, `location.county` preenchido (ex.: Churchill). Com `NASS_API_KEY`, `nass_used` é `true`.
 
 ### Simulate (Swagger)
 
@@ -153,7 +153,14 @@ Corpo completo (equivalente ao exemplo):
 }
 ```
 
-Pronto quando (Simulate): `placeholder` é `false` e o radar da baseline muda com chuva −25% / +2 °C em relação ao recommend.
+Pronto quando (Simulate): `placeholder` é `false` e o radar da baseline muda com chuva −25% / +2 °C em relação ao recommend. `GET /api/v1/fields/{field_id}/simulations/latest` devolve os mesmos `delta_*` do último POST.
+
+### Antes do demo
+
+1. Confirme `OPENET_API_KEY` e `NASS_API_KEY` em `backend/.env` (não commite o arquivo).
+2. Reinicie o uvicorn depois de mudar o `.env`.
+3. Rode **analyze de novo** nos talhões da demo para gravar `analysis_meta` (talhões antigos não inventam `et_source=openet`).
+4. No Swagger, no polígono Nevada: analyze com `analysis_meta.et_source` = `openet`; recommend com `nass_used` = `true`.
 
 ## Rotas
 
@@ -161,9 +168,10 @@ Pronto quando (Simulate): `placeholder` é `false` e o radar da baseline muda co
 - `POST /api/v1/auth/login` — mesmo contrato
 - `GET /api/v1/auth/me` — usuário do token
 - `GET /api/v1/fields/` — talhões do usuário logado
-- `POST /api/v1/fields/analyze` — POWER + SSURGO + OpenET (se houver chave) e persistência; `health` (overall + dimensões água/solo/fontes) (**Bearer**)
-- `GET /api/v1/diagnostics/{field_id}` — resumo persistido + o mesmo `health` derivado (**Bearer**, só o dono)
-- `POST /api/v1/rotations/recommend` — 3 rotações; condado via FCC; NASS se houver chave; OpenAI nas explicações se `OPENAI_API_KEY` (**Bearer**)
+- `POST /api/v1/fields/analyze` — POWER + SSURGO + OpenET (se houver chave) e persistência; `health` + `analysis_meta` (`et_source`, `failures`) (**Bearer**)
+- `GET /api/v1/diagnostics/{field_id}` — resumo persistido + o mesmo `health` e `analysis_meta` (**Bearer**, só o dono)
+- `GET /api/v1/fields/{field_id}/simulations/latest` — último simulate gravado (`id`, `created_at`, `simulation`); 404 se ainda não houver (**Bearer**, só o dono)
+- `POST /api/v1/rotations/recommend` — 3 rotações; condado via FCC; `nass_used` se QuickStats respondeu; OpenAI nas explicações se `OPENAI_API_KEY` (**Bearer**)
 - `POST /api/v1/rotations/simulate` — sliders de chuva/temperatura; envie `priorities` no app; na API, omitir usa o demo Nevada (**Bearer**)
 - `GET /api/v1/glossary/explain?term=NDVI` — glossário estático (público)
 

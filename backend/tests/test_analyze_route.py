@@ -33,6 +33,11 @@ def test_analyze_returns_real_summary_with_mocked_sources(mock_nasa_usda) -> Non
         assert health_payload["overall"] in {"ok", "warning", "critical"}
         dim_ids = {item["id"] for item in health_payload["dimensions"]}
         assert dim_ids == {"water", "soil", "sources"}
+        expected_source = "openet" if get_settings().openet_api_key else "power"
+        assert body["analysis_meta"]["et_source"] == expected_source
+        assert body["analysis_meta"]["climate_ok"] is True
+        assert body["analysis_meta"]["soil_ok"] is True
+        assert isinstance(body["analysis_meta"]["failures"], list)
 
         listed = client.get("/api/v1/fields/", headers=headers)
         assert listed.status_code == 200, listed.text
@@ -77,6 +82,7 @@ def test_diagnostics_roundtrip(mock_nasa_usda) -> None:
         created_health = created.json()["health"]
         assert diag["health"]["overall"] == created_health["overall"]
         assert diag["health"]["data_quality"] == created_health["data_quality"]
+        assert diag["analysis_meta"] == created.json()["analysis_meta"]
         assert {item["id"] for item in diag["health"]["dimensions"]} == {
             "water",
             "soil",
