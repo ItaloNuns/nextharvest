@@ -1,0 +1,62 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../models/field.dart';
+
+class FieldCard extends StatelessWidget {
+  const FieldCard({super.key, required this.field, this.onTap});
+
+  final Field field;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final radius = BorderRadius.circular(20);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(
+              colors.primaryContainer.withValues(alpha: 0.45),
+              colors.surface,
+            ),
+            borderRadius: radius,
+          ),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  field.name,
+                  style: GoogleFonts.ibmPlexSansThai(
+                    textStyle: theme.textTheme.headlineSmall,
+                    fontWeight: FontWeight.w600,
+                    color: colors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  field.currentCrop.isNotEmpty
+                      ? field.currentCrop
+                      : 'No current crop',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
