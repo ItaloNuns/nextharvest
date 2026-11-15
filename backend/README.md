@@ -19,7 +19,7 @@ O compose publica o Postgres em **5433** (evita conflito com um Postgres local n
 
 O arquivo `.env` fica em `backend/` (não na raiz do repositório). O app carrega esse caminho automaticamente; você pode rodar o uvicorn a partir de `backend/` ou da raiz do repo, desde que o pacote `app` esteja no `PYTHONPATH` (ex.: `pip install -e .` a partir de `backend/`). Para evitar confusão com banco ou chaves, prefira `cd backend` antes de subir o servidor.
 
-Documentação: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Saúde: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health).
+Documentação: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Saúde: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health). Guia das rotas (entregas e fluxo do app): [API_ROTAS.md](API_ROTAS.md).
 
 ### Auth (Swagger)
 
