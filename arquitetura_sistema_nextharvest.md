@@ -210,6 +210,7 @@ backend/
 | `POST /api/v1/auth/login` | Público | Login; devolve JWT e `user` (`id`, `name`, `email`). | PostgreSQL `users` |
 | `GET /api/v1/auth/me` | Bearer | Usuário do token (`id`, `name`, `email`). | JWT |
 | `GET /api/v1/fields/` | Bearer | Lista talhões do usuário (`id`, `name`, `current_crop`). | PostgreSQL |
+| `DELETE /api/v1/fields/{field_id}` | Bearer (dono) | Remove talhão e simulações gravadas; **204**. | PostgreSQL |
 | `POST /api/v1/fields/analyze` | Bearer | GeoJSON + cultura; `summary` + `health` + `analysis_meta`; persiste com `user_id`. | NASA POWER, SSURGO (SDA), OpenET (opcional) |
 | `GET /api/v1/diagnostics/{field_id}` | Bearer (dono) | Resumo persistido + `health` e `analysis_meta`. | Dados persistidos |
 | `GET /api/v1/fields/{field_id}/simulations/latest` | Bearer (dono) | Último simulate gravado; 404 se ainda não houver. | Tabela `simulations` |

@@ -42,7 +42,10 @@ class Field(Base):
     last_analysis_meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     owner: Mapped[User | None] = relationship(back_populates="fields")
-    simulations: Mapped[list["Simulation"]] = relationship(back_populates="field")
+    simulations: Mapped[list["Simulation"]] = relationship(
+        back_populates="field",
+        cascade="all, delete-orphan",
+    )
 
 
 class Simulation(Base):

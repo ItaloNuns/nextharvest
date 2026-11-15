@@ -172,6 +172,7 @@ Use this body for `POST /api/v1/fields/analyze`:
 | `POST /api/v1/rotations/recommend` | Three strategies, `nass_used`, explanations |
 | `POST /api/v1/rotations/simulate` | Climate sliders; persists history |
 | `GET /api/v1/fields/{field_id}/simulations/latest` | Last simulation for the field |
+| `DELETE /api/v1/fields/{field_id}` | Delete owned field and simulation history (204) |
 
 Route reference: [backend/API_ROTAS.md](backend/API_ROTAS.md).
 

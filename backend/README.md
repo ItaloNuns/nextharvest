@@ -170,6 +170,7 @@ Pronto quando (Simulate): `placeholder` é `false` e o radar da baseline muda co
 - `POST /api/v1/auth/login` — mesmo contrato
 - `GET /api/v1/auth/me` — usuário do token
 - `GET /api/v1/fields/` — talhões do usuário logado
+- `DELETE /api/v1/fields/{field_id}` — remove talhão do dono e o histórico em `simulations` (**Bearer**); resposta **204**
 - `POST /api/v1/fields/analyze` — POWER + SSURGO + OpenET (se houver chave) e persistência; `health` + `analysis_meta` (`et_source`, `failures`) (**Bearer**)
 - `GET /api/v1/diagnostics/{field_id}` — resumo persistido + o mesmo `health` e `analysis_meta` (**Bearer**, só o dono)
 - `GET /api/v1/fields/{field_id}/simulations/latest` — último simulate gravado (`id`, `created_at`, `simulation`); 404 se ainda não houver (**Bearer**, só o dono)

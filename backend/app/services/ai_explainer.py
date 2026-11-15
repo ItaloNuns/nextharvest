@@ -41,6 +41,7 @@ Regras:
 - Cite NASA POWER, SSURGO e OpenET somente quando o resumo tiver precipitação, solo ou ET > 0.
 - Sempre inclua risco que exige revisão com agrônomo local.
 - Use os trechos RAG só como contexto agronômico; não contradiga os números do talhão.
+- Todas as respostas devem ser em inglês
 """
 
 

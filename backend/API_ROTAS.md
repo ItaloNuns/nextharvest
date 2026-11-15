@@ -78,6 +78,17 @@ Ordem sugerida: **register/login** → **analyze** → (opcional **diagnostics**
 
 ## Talhões — `/api/v1/fields`
 
+### `DELETE /api/v1/fields/{field_id}`
+
+| | |
+|---|---|
+| **Auth** | Bearer; só o **dono** |
+| **Entrega** | **204** sem corpo |
+| **Efeito** | Apaga o talhão e as linhas em `simulations` (cascade ORM) |
+| **Erros** | **404** (inexistente ou outro usuário), **503** (falha no banco) |
+
+**Possibilita:** remover talhão errado ou demo antiga; lista em `GET /fields/` deixa de incluir o `id`.
+
 ### `GET /api/v1/fields/` (ou `GET /fields`)
 
 | | |

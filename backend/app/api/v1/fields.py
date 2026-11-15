@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import desc, select
 
@@ -138,6 +138,34 @@ async def analyze_field(
         ),
         analysis_meta=analysis_meta,
     )
+
+
+@router.delete(
+    "/{field_id}",
+    status_code=204,
+    summary="Delete an owned field and its simulation history",
+    response_class=Response,
+)
+async def delete_field(
+    field_id: str,
+    request: Request,
+    user: User = Depends(get_current_user),
+) -> Response:
+    field = await require_owned_field(request, field_id, user)
+    try:
+        async with SessionLocal() as session:
+            row = await session.get(Field, field.id)
+            if row is None:
+                raise HTTPException(status_code=404, detail=f"Unknown field_id: {field_id}")
+            await session.delete(row)
+            await session.commit()
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Could not delete field %s", field_id)
+        raise HTTPException(status_code=503, detail="Database unavailable") from None
+    logger.info("Deleted field %s for user %s", field_id, user.id)
+    return Response(status_code=204)
 
 
 @router.get(
