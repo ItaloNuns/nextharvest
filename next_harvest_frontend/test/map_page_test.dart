@@ -35,20 +35,20 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('Next Harvest · Mapa'), findsOneWidget);
-    expect(find.text('Carregando mapa…'), findsOneWidget);
+    expect(find.text('Next Harvest · Map'), findsOneWidget);
+    expect(find.text('Loading map…'), findsOneWidget);
 
     repository.pending.completeError(
       const FormatException('catálogo inválido'),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Tentar novamente'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
     expect(repository.calls, 1);
 
-    await tester.tap(find.text('Tentar novamente'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(repository.calls, 2);
-    expect(find.text('Tentar novamente'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

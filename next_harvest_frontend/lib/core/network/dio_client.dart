@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'dio_debug_logger.dart';
 
-/// Configuração HTTP compartilhada. A instância é gerenciada pelo dioProvider.
+/// Shared HTTP configuration. The instance is managed by dioProvider.
 class DioClient {
   DioClient({required String baseUrl})
     : dio = Dio(
@@ -12,7 +12,7 @@ class DioClient {
           connectTimeout: const Duration(seconds: 15),
           sendTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
-          headers: {'Accept': 'application/json'},
+          headers: {'Accept': 'application/json', 'Accept-Language': 'en-US'},
           contentType: Headers.jsonContentType,
           responseType: ResponseType.json,
         ),

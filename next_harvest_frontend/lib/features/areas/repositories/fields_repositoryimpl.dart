@@ -8,6 +8,15 @@ class FieldsRepositoryImpl implements FieldsRepository {
   final Dio _dio;
 
   @override
+  Future<void> deleteField(String fieldId) async {
+    if (fieldId.trim().isEmpty) throw ArgumentError.value(fieldId, 'fieldId');
+    final endpoint = Uri.parse(
+      _dio.options.baseUrl,
+    ).resolve('/api/v1/fields/${Uri.encodeComponent(fieldId)}');
+    await _dio.deleteUri<dynamic>(endpoint);
+  }
+
+  @override
   Future<List<Field>> getFields() async {
     final endpoint = Uri.parse(_dio.options.baseUrl).resolve('/api/v1/fields');
     final response = await _dio.getUri<dynamic>(endpoint);

@@ -1,14 +1,14 @@
 import 'regional_imagery_override.dart';
 
 enum MapSource {
-  aerial('Imagem aérea · USDA/NAIP'),
-  sentinel('Sentinel-2 · Visão regional');
+  aerial('Aerial imagery · USDA/NAIP'),
+  sentinel('Sentinel-2 · Regional view');
 
   const MapSource(this.label);
   final String label;
 }
 
-/// Base de visualização, com resolução e cobertura dependentes da fonte.
+/// Imagery layer with source-dependent resolution and coverage.
 class SatelliteMapLayer {
   const SatelliteMapLayer({
     required this.id,

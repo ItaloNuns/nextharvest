@@ -30,7 +30,7 @@ class MapViewModel extends Notifier<MapState> {
       return;
     }
     state = state.copyWith(
-      referenceError: 'Não foi possível carregar alguns nomes e limites.',
+      referenceError: 'Unable to load some place names and boundaries.',
     );
   }
 
@@ -76,18 +76,18 @@ class MapViewModel extends Notifier<MapState> {
         status: state.layer == null ? MapStatus.error : MapStatus.ready,
         isSwitching: false,
         error:
-            'Não foi possível conectar ao serviço de mapas. Verifique a conexão e tente novamente.',
+            'Unable to connect to the map service. Check your connection and try again.',
       );
     } catch (error, stackTrace) {
       if (kDebugMode) {
-        debugPrint('[MAP] Falha ao interpretar o catálogo: $error');
+        debugPrint('[MAP] Unable to parse the catalog: $error');
         debugPrintStack(stackTrace: stackTrace);
       }
       if (!ref.mounted) return;
       state = state.copyWith(
         status: state.layer == null ? MapStatus.error : MapStatus.ready,
         isSwitching: false,
-        error: 'Não foi possível carregar a camada. Tente novamente.',
+        error: 'Unable to load the layer. Please try again.',
       );
     }
   }
@@ -100,7 +100,7 @@ class MapViewModel extends Notifier<MapState> {
     }
     state = state.copyWith(
       tileError:
-          'Algumas imagens não carregaram. Verifique a conexão e tente novamente.',
+          'Some imagery failed to load. Check your connection and try again.',
     );
   }
 

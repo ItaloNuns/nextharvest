@@ -401,10 +401,7 @@ void main() {
     final notifier = container.read(mapViewModelProvider.notifier);
     await notifier.load();
     expect(container.read(mapViewModelProvider).status, MapStatus.error);
-    expect(
-      container.read(mapViewModelProvider).error,
-      contains('serviço de mapas'),
-    );
+    expect(container.read(mapViewModelProvider).error, contains('map service'));
     repository.fail = false;
     await notifier.load();
     expect(container.read(mapViewModelProvider).status, MapStatus.ready);

@@ -135,19 +135,19 @@ void main() {
                     isScrollControlled: true,
                     builder: (_) => const AreaDetailsSheet(),
                   ),
-                  child: const Text('Abrir formulário'),
+                  child: const Text('Open form'),
                 ),
               ),
             ),
           ),
         ),
       );
-      await tester.tap(find.text('Abrir formulário'));
+      await tester.tap(find.text('Open form'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('submit-area')));
       await tester.pumpAndSettle();
-      expect(find.text('Informe o nome da área.'), findsOneWidget);
-      expect(find.text('Informe a cultura atual.'), findsOneWidget);
+      expect(find.text('Enter the field name.'), findsOneWidget);
+      expect(find.text('Enter the current crop.'), findsOneWidget);
       expect(repository.requests, isEmpty);
       await tester.enterText(
         find.byKey(const ValueKey('area-name')),

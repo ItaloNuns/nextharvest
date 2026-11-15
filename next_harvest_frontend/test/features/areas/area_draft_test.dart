@@ -156,7 +156,7 @@ void main() {
       );
       expect(
         AreaGeometry.validate([square[0], square[2], square[1], square[3]]),
-        contains('cruzam'),
+        contains('intersect'),
       );
       expect(
         AreaGeometry.validate(const [

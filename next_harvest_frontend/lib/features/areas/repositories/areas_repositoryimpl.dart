@@ -18,8 +18,8 @@ class AreasRepositoryImpl implements AreasRepository {
     final directory = base.replace(
       path: base.path.endsWith('/') ? base.path : '${base.path}/',
     );
-    // Uma rota iniciada por / parte da raiz do servidor. postUri evita que
-    // o Dio concatene novamente o caminho presente em baseUrl.
+    // A route starting with / resolves from the server root. postUri prevents
+    // Dio from appending the path already present in baseUrl.
     final endpoint = directory.resolve(createPath.trim());
     final response = await _dio.postUri<dynamic>(
       endpoint,

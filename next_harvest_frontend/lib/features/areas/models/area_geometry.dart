@@ -5,7 +5,7 @@ abstract final class AreaGeometry {
 
   static String? validate(List<AreaVertex> vertices) {
     if (vertices.length < 3) {
-      return 'Adicione pelo menos três pontos para fechar a área.';
+      return 'Add at least three points to close the boundary.';
     }
     for (var i = 0; i < vertices.length; i++) {
       final point = vertices[i];
@@ -13,12 +13,12 @@ abstract final class AreaGeometry {
           !point.longitude.isFinite ||
           point.latitude.abs() > 90 ||
           point.longitude.abs() > 180) {
-        return 'A área contém uma coordenada inválida.';
+        return 'The field contains an invalid coordinate.';
       }
       for (var j = 0; j < i; j++) {
         if ((point.latitude - vertices[j].latitude).abs() < 1e-9 &&
             (point.longitude - vertices[j].longitude).abs() < 1e-9) {
-          return 'Dois pontos estão na mesma posição. Mova ou exclua um deles.';
+          return 'Two points share the same position. Move or delete one of them.';
         }
       }
     }
@@ -30,17 +30,17 @@ abstract final class AreaGeometry {
           (b.longitude - a.longitude) * (c.longitude - b.longitude) +
                   (b.latitude - a.latitude) * (c.latitude - b.latitude) <
               0) {
-        return 'Há linhas sobrepostas. Ajuste os pontos antes de fechar.';
+        return 'Some edges overlap. Adjust the points before closing the boundary.';
       }
       for (var j = i + 1; j < count; j++) {
         if (j == i + 1 || (i == 0 && j == count - 1)) continue;
         if (_intersects(a, b, vertices[j], vertices[(j + 1) % count])) {
-          return 'As linhas da área se cruzam. Ajuste os pontos antes de fechar.';
+          return 'The field edges intersect. Adjust the points before closing the boundary.';
         }
       }
     }
     if (signedArea(vertices).abs() <= _epsilon) {
-      return 'Os pontos precisam formar uma área, não uma linha.';
+      return 'The points must form an area, not a line.';
     }
     return null;
   }

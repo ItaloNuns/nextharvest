@@ -22,7 +22,7 @@ class AreaDrawingControls extends ConsumerWidget {
         child: FilledButton.tonalIcon(
           onPressed: notifier.startDrawing,
           icon: const Icon(Icons.polyline_outlined),
-          label: const Text('Desenhar área'),
+          label: const Text('Draw field'),
         ),
       );
     }
@@ -38,7 +38,7 @@ class AreaDrawingControls extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${draft.vertices.length} ${draft.vertices.length == 1 ? 'ponto' : 'pontos'}',
+              '${draft.vertices.length} ${draft.vertices.length == 1 ? 'point' : 'points'}',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             Wrap(
@@ -48,28 +48,28 @@ class AreaDrawingControls extends ConsumerWidget {
                   TextButton.icon(
                     onPressed: draft.vertices.isEmpty ? null : notifier.undo,
                     icon: const Icon(Icons.undo, size: 18),
-                    label: const Text('Desfazer'),
+                    label: const Text('Undo'),
                   ),
                   FilledButton(
                     onPressed: draft.vertices.length < 3 ? null : onClose,
-                    child: const Text('Fechar área'),
+                    child: const Text('Close boundary'),
                   ),
                 ],
                 if (closed)
                   FilledButton.icon(
                     onPressed: onSave,
                     icon: const Icon(Icons.save_outlined),
-                    label: const Text('Enviar área'),
+                    label: const Text('Submit field'),
                   ),
                 if (saved)
                   FilledButton.tonal(
                     onPressed: notifier.startDrawing,
-                    child: const Text('Desenhar outra'),
+                    child: const Text('Draw another'),
                   ),
                 if (!saved)
                   TextButton(
                     onPressed: draft.isSaving ? null : notifier.cancel,
-                    child: const Text('Descartar'),
+                    child: const Text('Discard'),
                   ),
               ],
             ),

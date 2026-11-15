@@ -4,10 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/field.dart';
 
 class FieldCard extends StatelessWidget {
-  const FieldCard({super.key, required this.field, this.onTap});
+  const FieldCard({super.key, required this.field, this.onTap, this.onDelete});
 
   final Field field;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -32,27 +33,41 @@ class FieldCard extends StatelessWidget {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  field.name,
-                  style: GoogleFonts.ibmPlexSansThai(
-                    textStyle: theme.textTheme.headlineSmall,
-                    fontWeight: FontWeight.w500,
-                    color: colors.onSurface,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        field.name,
+                        style: GoogleFonts.ibmPlexSansThai(
+                          textStyle: theme.textTheme.headlineSmall,
+                          fontWeight: FontWeight.w500,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        field.currentCrop.isNotEmpty
+                            ? 'Current Crop: ${field.currentCrop}'
+                            : 'Current Crop: Not specified',
+                        style: GoogleFonts.inter(
+                          textStyle: theme.textTheme.bodyMedium,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  field.currentCrop.isNotEmpty
-                      ? 'Current Crop: ${field.currentCrop}'
-                      : 'Current Crop: Not specified',
-                  style: GoogleFonts.inter(
-                    textStyle: theme.textTheme.bodyMedium,
-                    color: colors.onSurfaceVariant,
+                if (onDelete != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Delete field',
+                    onPressed: onDelete,
+                    icon: Icon(Icons.delete_outline, color: colors.error),
                   ),
-                ),
+                ],
               ],
             ),
           ),

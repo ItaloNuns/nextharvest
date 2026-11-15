@@ -6,6 +6,7 @@ import '../../map/view/map_page.dart';
 import '../../authentication/providers/auth_session_provider.dart';
 import '../../areas/providers/area_draft_viewmodel_provider.dart';
 import '../../areas/view/field_card.dart';
+import '../../areas/view/delete_field_dialog.dart';
 import '../../areas/viewmodel/fields_viewmodel.dart';
 import '../../diagnostics/view/diagnostics_page.dart';
 import '../../settings/view/settings_page.dart';
@@ -93,6 +94,31 @@ class HomePage extends ConsumerWidget {
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: FieldCard(
                                   field: field,
+                                  onDelete: () async {
+                                    final deleted = await showDialog<bool>(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (_) => DeleteFieldDialog(
+                                        field: field,
+                                        onDelete: () => ref
+                                            .read(
+                                              fieldsViewModelProvider.notifier,
+                                            )
+                                            .deleteField(field.id),
+                                      ),
+                                    );
+                                    if (context.mounted && deleted == true) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Field deleted successfully',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
                                   onTap: () => Navigator.of(context).push(
                                     MaterialPageRoute<void>(
                                       builder: (_) =>

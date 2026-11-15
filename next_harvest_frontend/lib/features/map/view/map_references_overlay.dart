@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 
 import '../models/map_reference_layer.dart';
 
-/// Camada de orientação independente: trocar a imagem não reinicia estes tiles.
+/// Independent reference layer: changing imagery does not reload these tiles.
 class MapReferencesOverlay extends StatefulWidget {
   const MapReferencesOverlay({
     super.key,
@@ -59,5 +59,5 @@ class _MapReferencesOverlayState extends State<MapReferencesOverlay> {
       },
     ),
   );
-  // TileLayer encerra o provider e suas conexões ao ser removido.
+  // TileLayer closes the provider and its connections when removed.
 }
