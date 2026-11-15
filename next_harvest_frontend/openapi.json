@@ -1,0 +1,1360 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NextHarvest API",
+    "description": "Decision support for crop rotation using NASA and USDA data. Register and log in at /auth, then Authorize in Swagger. POST /fields/analyze persists the field (POWER + SSURGO + OpenET). POST /rotations/recommend returns 3 strategies; POST /rotations/simulate applies sliders.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register with email and password",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              },
+              "examples": {
+                "demo": {
+                  "summary": "Demo farmer",
+                  "value": {
+                    "name": "Maria Silva",
+                    "email": "farmer@example.com",
+                    "password": "password1"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Log in with email and password",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "examples": {
+                "demo": {
+                  "summary": "Demo farmer",
+                  "value": {
+                    "email": "farmer@example.com",
+                    "password": "password1"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Current authenticated user",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/fields/": {
+      "get": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "List fields owned by the current user",
+        "operationId": "list_fields_api_v1_fields__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FieldListItem"
+                  },
+                  "type": "array",
+                  "title": "Response List Fields Api V1 Fields  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/fields/analyze": {
+      "post": {
+        "tags": [
+          "fields"
+        ],
+        "summary": "Analyze a field and persist the diagnosis",
+        "operationId": "analyze_field_api_v1_fields_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldAnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldAnalyzeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/diagnostics/{field_id}": {
+      "get": {
+        "tags": [
+          "diagnostics"
+        ],
+        "summary": "Persisted diagnosis for an owned field",
+        "operationId": "field_diagnostics_api_v1_diagnostics__field_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rotations/recommend": {
+      "post": {
+        "tags": [
+          "rotations"
+        ],
+        "summary": "Recommend 3 rotations based on the analyzed field",
+        "operationId": "recommend_rotations_api_v1_rotations_recommend_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendRequest"
+              },
+              "examples": {
+                "nevada_demo": {
+                  "summary": "Prioridades demo Nevada",
+                  "description": "Troque field_id pelo retorno do analyze.",
+                  "value": {
+                    "field_id": "fld_cole_o_id_do_analyze",
+                    "priorities": {
+                      "water_savings": 5,
+                      "soil_organic_matter": 3,
+                      "erosion_control": 4,
+                      "pest_cycle_break": 3,
+                      "forage_value": 2,
+                      "market_income": 3,
+                      "has_irrigation": false,
+                      "machinery": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotationRecommendation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/rotations/simulate": {
+      "post": {
+        "tags": [
+          "simulator"
+        ],
+        "summary": "Recalculate 3 rotations with rain and temperature sliders",
+        "operationId": "simulate_rotations_api_v1_rotations_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              },
+              "examples": {
+                "nevada_demo": {
+                  "summary": "Prioridades + chuva -25% e +2 °C",
+                  "description": "Troque field_id pelo retorno do analyze.",
+                  "value": {
+                    "field_id": "fld_cole_o_id_do_analyze",
+                    "priorities": {
+                      "water_savings": 5,
+                      "soil_organic_matter": 3,
+                      "erosion_control": 4,
+                      "pest_cycle_break": 3,
+                      "forage_value": 2,
+                      "market_income": 3,
+                      "has_irrigation": false,
+                      "machinery": []
+                    },
+                    "delta_precip_pct": -25,
+                    "delta_temp_c": 2
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/glossary/explain": {
+      "get": {
+        "tags": [
+          "assistant"
+        ],
+        "summary": "Explain Term",
+        "operationId": "explain_term_api_v1_glossary_explain_get",
+        "parameters": [
+          {
+            "name": "term",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Term"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlossaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DiagnosticDimension": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "water",
+              "soil",
+              "sources"
+            ],
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning",
+              "critical"
+            ],
+            "title": "Status"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "label"
+        ],
+        "title": "DiagnosticDimension"
+      },
+      "DiagnosticHealth": {
+        "properties": {
+          "overall": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning",
+              "critical"
+            ],
+            "title": "Overall"
+          },
+          "data_quality": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning",
+              "critical"
+            ],
+            "title": "Data Quality"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticDimension"
+            },
+            "type": "array",
+            "title": "Dimensions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall",
+          "data_quality",
+          "dimensions"
+        ],
+        "title": "DiagnosticHealth"
+      },
+      "DiagnosticsResponse": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "placeholder": {
+            "type": "boolean",
+            "title": "Placeholder",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/HarmonizedSummary"
+          },
+          "health": {
+            "$ref": "#/components/schemas/DiagnosticHealth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_id",
+          "message",
+          "summary",
+          "health"
+        ],
+        "title": "DiagnosticsResponse"
+      },
+      "FarmerPriorities": {
+        "properties": {
+          "water_savings": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Water Savings",
+            "default": 5
+          },
+          "soil_organic_matter": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Soil Organic Matter",
+            "default": 3
+          },
+          "erosion_control": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Erosion Control",
+            "default": 4
+          },
+          "pest_cycle_break": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Pest Cycle Break",
+            "default": 3
+          },
+          "forage_value": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Forage Value",
+            "default": 2
+          },
+          "market_income": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 0,
+            "title": "Market Income",
+            "default": 3
+          },
+          "has_irrigation": {
+            "type": "boolean",
+            "title": "Has Irrigation",
+            "default": false
+          },
+          "machinery": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Machinery"
+          }
+        },
+        "type": "object",
+        "title": "FarmerPriorities"
+      },
+      "FieldAnalyzeRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": "Talhão"
+          },
+          "current_crop": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Current Crop"
+          },
+          "geometry": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Geometry"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_crop",
+          "geometry"
+        ],
+        "title": "FieldAnalyzeRequest",
+        "example": {
+          "current_crop": "Alfafa",
+          "geometry": {
+            "coordinates": [
+              [
+                [-118.78, 39.47],
+                [-118.77, 39.47],
+                [-118.77, 39.48],
+                [-118.78, 39.48],
+                [-118.78, 39.47]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "name": "Alfafa Nevada"
+        }
+      },
+      "FieldAnalyzeResponse": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "current_crop": {
+            "type": "string",
+            "title": "Current Crop"
+          },
+          "placeholder": {
+            "type": "boolean",
+            "title": "Placeholder",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/HarmonizedSummary"
+          },
+          "health": {
+            "$ref": "#/components/schemas/DiagnosticHealth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_id",
+          "name",
+          "current_crop",
+          "message",
+          "summary",
+          "health"
+        ],
+        "title": "FieldAnalyzeResponse"
+      },
+      "FieldListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "current_crop": {
+            "type": "string",
+            "title": "Current Crop"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "current_crop"
+        ],
+        "title": "FieldListItem"
+      },
+      "GlossaryResponse": {
+        "properties": {
+          "term": {
+            "type": "string",
+            "title": "Term"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "satellite_vs_in_situ": {
+            "type": "string",
+            "title": "Satellite Vs In Situ"
+          },
+          "placeholder": {
+            "type": "boolean",
+            "title": "Placeholder",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "term",
+          "explanation",
+          "satellite_vs_in_situ"
+        ],
+        "title": "GlossaryResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HarmonizedSummary": {
+        "properties": {
+          "annual_precip_mm": {
+            "type": "number",
+            "title": "Annual Precip Mm"
+          },
+          "annual_et_demand_mm": {
+            "type": "number",
+            "title": "Annual Et Demand Mm"
+          },
+          "water_balance_deficit_mm": {
+            "type": "number",
+            "title": "Water Balance Deficit Mm"
+          },
+          "smap_rootzone_anomaly_z": {
+            "type": "number",
+            "title": "Smap Rootzone Anomaly Z"
+          },
+          "bare_field_months": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bare Field Months"
+          },
+          "soil_profile": {
+            "$ref": "#/components/schemas/SoilProfile"
+          },
+          "rootzone_source": {
+            "type": "string",
+            "enum": [
+              "none",
+              "power_gwetroot"
+            ],
+            "title": "Rootzone Source",
+            "default": "none"
+          }
+        },
+        "type": "object",
+        "required": [
+          "annual_precip_mm",
+          "annual_et_demand_mm",
+          "water_balance_deficit_mm",
+          "smap_rootzone_anomaly_z",
+          "bare_field_months",
+          "soil_profile"
+        ],
+        "title": "HarmonizedSummary"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "redis": {
+            "type": "string",
+            "title": "Redis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "redis"
+        ],
+        "title": "HealthResponse"
+      },
+      "Location": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lon": {
+            "type": "number",
+            "title": "Lon"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "county": {
+            "type": "string",
+            "title": "County"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lon",
+          "state",
+          "county"
+        ],
+        "title": "Location"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "examples": [
+          {
+            "email": "farmer@example.com",
+            "password": "password1"
+          }
+        ]
+      },
+      "MetricsRadar": {
+        "properties": {
+          "water_efficiency_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Water Efficiency Score"
+          },
+          "soil_health_organic_matter_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Soil Health Organic Matter Score"
+          },
+          "nitrogen_fixation_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Nitrogen Fixation Score"
+          },
+          "erosion_protection_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Erosion Protection Score"
+          },
+          "pest_cycle_disruption_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Pest Cycle Disruption Score"
+          },
+          "market_viability_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Market Viability Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "water_efficiency_score",
+          "soil_health_organic_matter_score",
+          "nitrogen_fixation_score",
+          "erosion_protection_score",
+          "pest_cycle_disruption_score",
+          "market_viability_score"
+        ],
+        "title": "MetricsRadar"
+      },
+      "RecommendRequest": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Field Id",
+            "description": "ID retornado pelo POST /fields/analyze"
+          },
+          "priorities": {
+            "$ref": "#/components/schemas/FarmerPriorities",
+            "description": "Prioridades do produtor (sliders 0–5). Obrigatório no app; exemplo pré-preenchido no Swagger."
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_id",
+          "priorities"
+        ],
+        "title": "RecommendRequest",
+        "examples": [
+          {
+            "field_id": "fld_cole_o_id_do_analyze",
+            "priorities": {
+              "erosion_control": 4,
+              "forage_value": 2,
+              "has_irrigation": false,
+              "machinery": [],
+              "market_income": 3,
+              "pest_cycle_break": 3,
+              "soil_organic_matter": 3,
+              "water_savings": 5
+            }
+          }
+        ]
+      },
+      "RegisterRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "RegisterRequest",
+        "examples": [
+          {
+            "email": "farmer@example.com",
+            "name": "Maria Silva",
+            "password": "password1"
+          }
+        ]
+      },
+      "RotationExplanation": {
+        "properties": {
+          "why_suggested": {
+            "type": "string",
+            "title": "Why Suggested"
+          },
+          "supporting_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supporting Evidence"
+          },
+          "expected_benefits": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Benefits"
+          },
+          "information_gaps_and_uncertainty": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Information Gaps And Uncertainty"
+          },
+          "risks_requiring_local_review": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risks Requiring Local Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "why_suggested",
+          "supporting_evidence",
+          "expected_benefits",
+          "information_gaps_and_uncertainty",
+          "risks_requiring_local_review"
+        ],
+        "title": "RotationExplanation"
+      },
+      "RotationRecommendation": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "placeholder": {
+            "type": "boolean",
+            "title": "Placeholder",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "harmonized_summary": {
+            "$ref": "#/components/schemas/HarmonizedSummary"
+          },
+          "strategies": {
+            "items": {
+              "$ref": "#/components/schemas/RotationStrategy"
+            },
+            "type": "array",
+            "title": "Strategies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_id",
+          "message",
+          "location",
+          "harmonized_summary",
+          "strategies"
+        ],
+        "title": "RotationRecommendation"
+      },
+      "RotationStrategy": {
+        "properties": {
+          "strategy_id": {
+            "type": "string",
+            "title": "Strategy Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "is_baseline": {
+            "type": "boolean",
+            "title": "Is Baseline"
+          },
+          "sequence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sequence"
+          },
+          "metrics_radar": {
+            "$ref": "#/components/schemas/MetricsRadar"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/RotationExplanation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "strategy_id",
+          "name",
+          "is_baseline",
+          "sequence",
+          "metrics_radar",
+          "explanation"
+        ],
+        "title": "RotationStrategy"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Field Id",
+            "description": "ID retornado pelo POST /fields/analyze"
+          },
+          "delta_precip_pct": {
+            "type": "number",
+            "maximum": 30,
+            "minimum": -30,
+            "title": "Delta Precip Pct",
+            "description": "Variação percentual na chuva anual (ex.: -25).",
+            "default": 0
+          },
+          "delta_temp_c": {
+            "type": "number",
+            "maximum": 4,
+            "minimum": 0,
+            "title": "Delta Temp C",
+            "description": "Aumento de temperatura em °C para recálculo da ET (ex.: 2).",
+            "default": 0
+          },
+          "priorities": {
+            "$ref": "#/components/schemas/FarmerPriorities",
+            "description": "Mesmas prioridades do Recommend; omitir na API usa o perfil demo Nevada."
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_id"
+        ],
+        "title": "SimulationRequest",
+        "examples": [
+          {
+            "delta_precip_pct": -25,
+            "delta_temp_c": 2,
+            "field_id": "fld_cole_o_id_do_analyze",
+            "priorities": {
+              "erosion_control": 4,
+              "forage_value": 2,
+              "has_irrigation": false,
+              "machinery": [],
+              "market_income": 3,
+              "pest_cycle_break": 3,
+              "soil_organic_matter": 3,
+              "water_savings": 5
+            }
+          }
+        ]
+      },
+      "SimulationResponse": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "delta_precip_pct": {
+            "type": "number",
+            "title": "Delta Precip Pct"
+          },
+          "delta_temp_c": {
+            "type": "number",
+            "title": "Delta Temp C"
+          },
+          "placeholder": {
+            "type": "boolean",
+            "title": "Placeholder",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "strategies": {
+            "items": {
+              "$ref": "#/components/schemas/RotationStrategy"
+            },
+            "type": "array",
+            "title": "Strategies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_id",
+          "delta_precip_pct",
+          "delta_temp_c",
+          "message",
+          "strategies"
+        ],
+        "title": "SimulationResponse"
+      },
+      "SoilProfile": {
+        "properties": {
+          "mapunit_name": {
+            "type": "string",
+            "title": "Mapunit Name"
+          },
+          "organic_matter_pct": {
+            "type": "number",
+            "title": "Organic Matter Pct"
+          },
+          "available_water_capacity_cm_cm": {
+            "type": "number",
+            "title": "Available Water Capacity Cm Cm"
+          },
+          "drainage_class": {
+            "type": "string",
+            "title": "Drainage Class"
+          },
+          "hydrologic_group": {
+            "type": "string",
+            "title": "Hydrologic Group"
+          },
+          "erosion_k_factor": {
+            "type": "number",
+            "title": "Erosion K Factor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mapunit_name",
+          "organic_matter_pct",
+          "available_water_capacity_cm_cm",
+          "drainage_class",
+          "hydrologic_group",
+          "erosion_k_factor"
+        ],
+        "title": "SoilProfile"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserPublic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user"
+        ],
+        "title": "TokenResponse"
+      },
+      "UserPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "title": "UserPublic"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
