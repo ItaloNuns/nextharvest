@@ -23,6 +23,25 @@ class UsdaCropsMarketError(RuntimeError):
     """Raised when NASS QuickStats fails."""
 
 
+_FCC_COUNTY_SUFFIXES = (
+    " County",
+    " Parish",
+    " Borough",
+    " Census Area",
+    " Municipality",
+)
+
+
+def nass_county_name(county: str) -> str:
+    """FCC returns e.g. 'Churchill County'; NASS QuickStats expects 'CHURCHILL'."""
+    name = county.strip()
+    for suffix in _FCC_COUNTY_SUFFIXES:
+        if name.endswith(suffix):
+            name = name[: -len(suffix)].strip()
+            break
+    return name.upper()
+
+
 def _parse_nass_value(raw: Any) -> float | None:
     if raw is None:
         return None
@@ -97,22 +116,40 @@ class UsdaCropsMarketClient:
             raise UsdaCropsMarketError("NASS_API_KEY is not set")
         if not state or not county:
             return {}
+        county_query = nass_county_name(county)
         target_year = year or (date.today().year - 1)
-        payload = await self._get(state, county, target_year)
-        parsed = parse_nass_payload(payload)
-        if parsed:
-            return parsed
-        payload = await self._get(state, county, target_year - 1)
-        return parse_nass_payload(payload)
+        last_error: UsdaCropsMarketError | None = None
+        for attempt_year in (target_year, target_year - 1):
+            try:
+                payload = await self._get(
+                    state, county_query, attempt_year, display_county=county
+                )
+            except UsdaCropsMarketError as exc:
+                last_error = exc
+                continue
+            parsed = parse_nass_payload(payload)
+            if parsed:
+                return parsed
+        if last_error is not None:
+            raise last_error
+        return {}
 
-    async def _get(self, state: str, county: str, year: int) -> dict[str, Any]:
+    async def _get(
+        self,
+        state: str,
+        county_query: str,
+        year: int,
+        *,
+        display_county: str | None = None,
+    ) -> dict[str, Any]:
+        label = display_county or county_query
         params = {
             "key": self._api_key,
             "source_desc": "SURVEY",
             "sector_desc": "CROPS",
             "agg_level_desc": "COUNTY",
             "state_alpha": state.upper(),
-            "county_name": county.upper(),
+            "county_name": county_query,
             "year": str(year),
             "statisticcat_desc": "YIELD",
             "freq_desc": "ANNUAL",
@@ -127,7 +164,7 @@ class UsdaCropsMarketClient:
                 await client.aclose()
         if response.status_code != 200:
             raise UsdaCropsMarketError(
-                f"NASS HTTP {response.status_code} for {county}, {state} ({year})"
+                f"NASS HTTP {response.status_code} for {label}, {state} ({year})"
             )
         try:
             return response.json()
