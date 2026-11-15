@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../authentication/providers/auth_session_provider.dart';
 import '../viewmodel/profile_viewmodel.dart';
 import '../viewmodel/theme_viewmodel.dart';
+import 'widgets/location_permission_tile.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -124,6 +125,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           }
                         },
                 ),
+                const SizedBox(height: 36),
+                Text('Permissions', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 16),
+                const LocationPermissionTile(),
               ],
             ),
           ),
