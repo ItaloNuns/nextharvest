@@ -4,7 +4,7 @@
 
 NextHarvest is a decision-support tool that helps farmers compare **crop rotation strategies** using **NASA climate data** and **USDA soil and market data**, grounded in the real-world alfalfa story from Churchill County, Nevada (Denise Moyle).
 
-Stack: **Flutter** mobile client, **FastAPI** backend, **PostgreSQL + PostGIS**, harmonized field diagnostics, three explainable rotation scenarios, and climate scenario sliders.
+Stack: **Flutter** mobile client, **FastAPI** backend, **PostgreSQL + PostGIS**, harmonized field diagnostics, three explainable rotation scenarios, and climate scenario sliders. **API-facing text** (`message`, `health` labels, rotation explanations, glossary) is **English** for judges and Swagger demos.
 
 ---
 
@@ -14,7 +14,7 @@ Stack: **Flutter** mobile client, **FastAPI** backend, **PostgreSQL + PostGIS**,
 
 No login is required to **view** this repository. To **run** the product locally, use [Quick start](#quick-start) below (backend + optional mobile app).
 
-You can add a hosted API URL or demo video here later without changing the rest of this page.
+Add your **Space Apps project demo** here when ready (public link, no login—max **7 slides** or **30s** video per challenge rules). You can also add a hosted API URL if you deploy the backend.
 
 ---
 
@@ -29,7 +29,7 @@ You can add a hosted API URL or demo video here later without changing the rest 
 3. **Recommend** returns **three strategies** (current baseline, water resilience, soil/market), each with **five required explanation sections** (why, evidence, benefits, gaps, risks).
 4. **Simulate** adjusts annual rain (±30%) and temperature (+0–4 °C) and recalculates scores—no new NASA calls.
 
-**Governance.** Recommendations **support, not replace**, local agronomist judgment. The API exposes data-source flags (`analysis_meta`, `nass_used`) and a static glossary that separates satellite estimates from in-field measurement.
+**Governance.** Recommendations **support, not replace**, local agronomist judgment. The API exposes data-source flags (`analysis_meta`, `nass_used`) and a static glossary that separates satellite estimates from in-field measurement. Strategy explanations use English templates (optional OpenAI rewrite when `OPENAI_API_KEY` is set).
 
 ---
 
@@ -39,11 +39,11 @@ You can add a hosted API URL or demo video here later without changing the rest 
 | --------------------- | ------ | ---------------- |
 | Compare ≥3 rotation strategies (incl. baseline) | Yes | `POST /api/v1/rotations/recommend` |
 | Five sections per strategy | Yes | `RotationExplanation` in API; templates or OpenAI if `OPENAI_API_KEY` |
-| Farmer priorities and constraints | Yes | `priorities` in recommend/simulate; mobile map & settings |
+| Farmer priorities and constraints | Yes | `priorities` in recommend/simulate; mobile **recommendation form** (sliders) |
 | Bare fields / vulnerability windows | Partial | `bare_field_months` from **NASA POWER** proxy (low ET + GWETROOT)—not Sentinel-2 yet |
 | Data fusion on a common analysis unit | MVP | Climate at centroid + SSURGO on polygon + optional OpenET; no 30 m H3 grid yet |
-| Scenario sliders (rain / temperature) | Yes | `POST /api/v1/rotations/simulate` |
-| Explain science; satellite vs in-situ | Partial | `GET /api/v1/glossary/explain`; diagnostics UI on mobile |
+| Scenario sliders (rain / temperature) | Yes | `POST /api/v1/rotations/simulate`; **recommendation results** screen in the app |
+| Explain science; satellite vs in-situ | Partial | `GET /api/v1/glossary/explain`; diagnostics UI; recommendation cards (5 sections) |
 
 We do **not** claim operational **SMAP L4**, **Sentinel-2** bare soil, or **AMS** prices in the live analyze path—those are documented roadmap items (CDSE connector is still a stub).
 
@@ -89,12 +89,17 @@ Full system design (Portuguese): [arquitetura_sistema_nextharvest.md](arquitetur
 | Path | Description |
 | ---- | ----------- |
 | [backend/](backend/) | FastAPI service, harmonizer, rotation engine, auth, tests (`pytest`) |
-| [next_harvest_frontend/](next_harvest_frontend/) | Flutter app: auth, map, polygon analyze, diagnostics |
-| [backend/API_ROTAS.md](backend/API_ROTAS.md) | Route-by-route API guide (Portuguese) |
+| [next_harvest_frontend/](next_harvest_frontend/) | Flutter app: auth, **My Fields**, map/analyze, diagnostics, **recommendations**, scenario sliders, settings/about |
+| [backend/API_ROTAS.md](backend/API_ROTAS.md) | Route-by-route API guide (**English**) |
 | [arquitetura_sistema_nextharvest.md](arquitetura_sistema_nextharvest.md) | Challenge traceability and architecture (Portuguese) |
 | [relatorio_recursos_spaceapps_2026.md](relatorio_recursos_spaceapps_2026.md) | NASA Resources tab research (Portuguese) |
 
-**Mobile vs API.** The **full** analyze → recommend → simulate flow is available in the **API and Swagger**. The Flutter app today covers **registration/login, map drawing, field analyze, and diagnostics**; recommend and simulate screens can be exercised via `/docs` until wired in the client.
+### End-to-end flows
+
+- **API / Swagger:** register → analyze → recommend → simulate → `GET .../simulations/latest` (canonical for CI and judges without the mobile app).
+- **Flutter app:** register → draw and submit a field on the map → **My Fields** → **field diagnostic** → **Recommend rotations** (farmer priority sliders) → **three strategies** with five explanation sections → adjust **rain/temperature** on the results screen (`POST /rotations/simulate`); **delete field** from the home list.
+
+Map imagery and tile details: [next_harvest_frontend/README.md](next_harvest_frontend/README.md) (Portuguese). Core home, diagnostics, and recommendation screens use **English** UI copy; some map-drawing strings may remain bilingual.
 
 ---
 
@@ -167,6 +172,7 @@ Use this body for `POST /api/v1/fields/analyze`:
 
 | Endpoint | Purpose |
 | -------- | ------- |
+| `GET /api/v1/fields/` | List owned fields (powers **My Fields** on mobile) |
 | `POST /api/v1/fields/analyze` | Harmonized summary, `health`, `analysis_meta` |
 | `GET /api/v1/diagnostics/{field_id}` | Persisted diagnosis (same badges) |
 | `POST /api/v1/rotations/recommend` | Three strategies, `nass_used`, explanations |
@@ -174,13 +180,13 @@ Use this body for `POST /api/v1/fields/analyze`:
 | `GET /api/v1/fields/{field_id}/simulations/latest` | Last simulation for the field |
 | `DELETE /api/v1/fields/{field_id}` | Delete owned field and simulation history (204) |
 
-Route reference: [backend/API_ROTAS.md](backend/API_ROTAS.md).
+Route reference: [backend/API_ROTAS.md](backend/API_ROTAS.md). Responses use **English** user-facing strings unless you customize the client.
 
 ---
 
 ## Team
 
-**Team Averiguando** — NASA Space Apps Challenge 2026.
+**Team Averiguando Possível Resenha** — NASA Space Apps Challenge 2026.
 
 ---
 
@@ -202,8 +208,11 @@ Python 3.12+, FastAPI, PostgreSQL/PostGIS, Flutter, Riverpod, Dio — automated 
 
 - [ ] Confirm repository visibility is **Public**
 - [ ] Replace or verify the GitHub URL above matches your canonical remote
+- [ ] Add the **project demo** link under [Project link](#project-link-public) (≤7 slides or ≤30s video)
 - [ ] Ensure `.env` files are gitignored; only `.env.example` is tracked
 - [ ] Run `pytest` in `backend/` and fix any failures
 - [ ] Re-read the [challenge mapping](#how-this-maps-to-the-challenge) table for overclaims (Sentinel, satellite SMAP)
+- [ ] README mobile flow matches your submission **screenshots/GIF**
+- [ ] After re-**analyze**, confirm `/docs` responses show **English** `message` and `health` labels
 
 *Last updated: November 2026.*
