@@ -7,6 +7,7 @@ import '../../authentication/providers/auth_session_provider.dart';
 import '../../areas/providers/area_draft_viewmodel_provider.dart';
 import '../../areas/view/field_card.dart';
 import '../../areas/viewmodel/fields_viewmodel.dart';
+import '../../diagnostics/view/diagnostics_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -89,7 +90,15 @@ class HomePage extends ConsumerWidget {
                             for (final field in items)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
-                                child: FieldCard(field: field),
+                                child: FieldCard(
+                                  field: field,
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          DiagnosticsPage(field: field),
+                                    ),
+                                  ),
+                                ),
                               ),
                           ],
                   ),
