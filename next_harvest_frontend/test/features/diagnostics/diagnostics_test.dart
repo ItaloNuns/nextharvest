@@ -17,6 +17,12 @@ Map<String, dynamic> payload(String id) => {
   'field_id': id,
   'name': 'Nevada Farm',
   'current_crop': 'Alfalfa',
+  'analysis_meta': {
+    'climate_ok': true,
+    'soil_ok': false,
+    'et_source': 'openet',
+    'failures': [],
+  },
   'health': {
     'overall': 'ok',
     'data_quality': 'ok',
@@ -32,6 +38,7 @@ Map<String, dynamic> payload(String id) => {
     'annual_et_demand_mm': 650.5,
     'water_balance_deficit_mm': 0,
     'smap_rootzone_anomaly_z': -1.25,
+    'rootzone_source': 'none',
     'bare_field_months': ['January', 'February'],
     'soil_profile': {
       'mapunit_name': 'Silt loam',
@@ -92,6 +99,10 @@ void main() {
       expect(diagnostic.placeholder, isTrue);
       expect(diagnostic.name, 'Nevada Farm');
       expect(diagnostic.currentCrop, 'Alfalfa');
+      expect(diagnostic.analysisMeta!.climateOk, isTrue);
+      expect(diagnostic.analysisMeta!.soilOk, isFalse);
+      expect(diagnostic.analysisMeta!.etSource, 'openet');
+      expect(diagnostic.analysisMeta!.failures, isEmpty);
       expect(diagnostic.health!.overall, 'ok');
       expect(diagnostic.health!.dataQuality, 'ok');
       expect(diagnostic.health!.dimensions.first.id, 'water');
@@ -102,6 +113,7 @@ void main() {
       expect(summary.annualEtDemandMm, 650.5);
       expect(summary.waterBalanceDeficitMm, 0);
       expect(summary.smapRootzoneAnomalyZ, -1.25);
+      expect(summary.rootzoneSource, 'none');
       expect(summary.bareFieldMonths, ['January', 'February']);
       expect(summary.soilProfile!.organicMatterPct, 2.5);
       expect(summary.soilProfile!.availableWaterCapacity, 0.18);
@@ -113,7 +125,9 @@ void main() {
       });
       expect(missing.summary!.annualPrecipMm, isNull);
       expect(missing.summary!.soilProfile, isNull);
+      expect(missing.summary!.rootzoneSource, isNull);
       expect(missing.health, isNull);
+      expect(missing.analysisMeta, isNull);
     },
   );
 

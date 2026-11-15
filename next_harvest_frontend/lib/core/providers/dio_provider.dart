@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/dio_client.dart';
 import '../../features/authentication/providers/auth_session_provider.dart';
 
-/// URL carregada do .env na inicialização. Pode ser sobrescrita em testes.
+/// URL loaded from .env at startup. Can be overridden in tests.
 final apiBaseUrlProvider = Provider<String>((ref) {
   return dotenv.get('API_BASE_URL');
 });
 
-/// Uma instância por ProviderScope, compartilhada pelos repositories.
+/// One instance per ProviderScope, shared by repositories.
 final dioProvider = Provider<Dio>((ref) {
   final dio = DioClient(baseUrl: ref.watch(apiBaseUrlProvider)).dio;
   final backend = Uri.parse(dio.options.baseUrl);

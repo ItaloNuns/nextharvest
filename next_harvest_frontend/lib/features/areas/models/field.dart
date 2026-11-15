@@ -1,5 +1,9 @@
 class Field {
-  const Field({required this.id, required this.name, required this.currentCrop});
+  const Field({
+    required this.id,
+    required this.name,
+    required this.currentCrop,
+  });
 
   factory Field.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -12,11 +16,7 @@ class Field {
         crop is! String) {
       throw const FormatException('Invalid field response');
     }
-    return Field(
-      id: id,
-      name: name.trim(),
-      currentCrop: crop.trim(),
-    );
+    return Field(id: id, name: name.trim(), currentCrop: crop.trim());
   }
 
   final String id;

@@ -89,7 +89,7 @@ class AreaDraftViewModel extends Notifier<AreaDraftState> {
         name.trim().isEmpty ||
         currentCrop.trim().isEmpty) {
       state = state.copyWith(
-        error: geometryError ?? 'Informe o nome da área e a cultura atual.',
+        error: geometryError ?? 'Enter the field name and current crop.',
       );
       return false;
     }
@@ -116,7 +116,7 @@ class AreaDraftViewModel extends Notifier<AreaDraftState> {
         state = state.copyWith(
           status: AreaDraftStatus.closed,
           error:
-              'O serviço de envio ainda não está configurado. O desenho foi mantido.',
+              'The submission service is not configured yet. Your drawing has been preserved.',
         );
       }
     } on DioException catch (error) {
@@ -125,13 +125,13 @@ class AreaDraftViewModel extends Notifier<AreaDraftState> {
           status: AreaDraftStatus.closed,
           error: switch (error.response?.statusCode) {
             401 || 403 =>
-              'Sem permissão para enviar esta área. O desenho foi mantido.',
+              'You do not have permission to submit this field. Your drawing has been preserved.',
             404 =>
-              'O endereço de envio não foi encontrado. Confira a rota configurada da API.',
+              'The submission endpoint was not found. Check the configured API route.',
             400 || 422 =>
-              'A API recusou os dados da área. Revise o nome, a cultura e o desenho.',
+              'The API rejected the field data. Review the name, crop and boundary.',
             _ =>
-              'Não foi possível enviar a área. Verifique a conexão e tente novamente.',
+              'Unable to submit the field. Check your connection and try again.',
           },
         );
       }
@@ -140,7 +140,7 @@ class AreaDraftViewModel extends Notifier<AreaDraftState> {
         state = state.copyWith(
           status: AreaDraftStatus.closed,
           error:
-              'Não foi possível enviar a área. O desenho foi mantido para tentar novamente.',
+              'Unable to submit the field. Your drawing has been preserved so you can try again.',
         );
       }
     }

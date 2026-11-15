@@ -16,7 +16,7 @@ class CreateAreaRequest {
 
   Map<String, dynamic> toJson() {
     if (name.isEmpty || currentCrop.isEmpty) {
-      throw const FormatException('Informe o nome da área e a cultura atual.');
+      throw const FormatException('Enter the field name and current crop.');
     }
     return {
       'current_crop': currentCrop,

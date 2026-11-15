@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../models/satellite_map_layer.dart';
 import '../models/regional_imagery_override.dart';
 
-/// Reutiliza conexões, cancelamento e cache em disco do flutter_map.
+/// Reuses flutter_map connections, cancellation and disk caching.
 class MapTileProvider extends NetworkTileProvider {
   MapTileProvider(this.layer)
     : super(
@@ -49,8 +49,8 @@ abstract final class MapTileUrls {
     return null;
   }
 
-  /// BBOX determinístico em Web Mercator: a mesma área sempre usa a mesma chave
-  /// de cache. Não inclui timestamps nem tokens que invalidariam o cache.
+  /// Deterministic Web Mercator BBOX: the same area always uses the same cache key.
+  /// No timestamps or tokens that would invalidate the cache are included.
   static String build(SatelliteMapLayer layer, TileCoordinates tile, int size) {
     if (!layer.isImageService) {
       return layer.urlTemplate

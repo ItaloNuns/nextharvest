@@ -29,6 +29,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       key: ValueKey(authenticated),
       title: 'Next Harvest',
+      locale: const Locale('en', 'US'),
       theme: NextHarvestTheme.light(),
       darkTheme: NextHarvestTheme.dark(),
       themeMode:

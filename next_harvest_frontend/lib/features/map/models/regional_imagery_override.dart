@@ -1,4 +1,4 @@
-/// Área de teste: decide a fonte pelo centro geográfico de cada tile.
+/// Trial region: selects the source using the geographic center of each tile.
 class ImageryRegion {
   const ImageryRegion({
     required this.name,
@@ -21,7 +21,7 @@ class ImageryRegion {
       return false;
     }
     var inside = false;
-    // Regra par/ímpar também preserva buracos e ilhas do contorno.
+    // The even-odd rule also preserves holes and islands in the boundary.
     for (final ring in rings) {
       for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
         final a = ring[i];

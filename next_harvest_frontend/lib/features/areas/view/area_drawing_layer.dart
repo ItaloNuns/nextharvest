@@ -143,15 +143,15 @@ class _VertexHandleState extends State<_VertexHandle> {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Ponto ${widget.number}',
-    hint: widget.editable ? 'Toque para opções ou arraste para mover' : null,
+    label: 'Point ${widget.number}',
+    hint: widget.editable ? 'Tap for options or drag to move' : null,
     button: widget.editable,
     onTap: widget.editable ? widget.onTap : null,
     child: IgnorePointer(
       ignoring: !widget.editable,
       child: RawGestureDetector(
         behavior: HitTestBehavior.opaque,
-        // O ponto reivindica o gesto antes do recognizer de escala do mapa.
+        // The point claims the gesture before the map scale recognizer.
         gestures: {
           EagerGestureRecognizer:
               GestureRecognizerFactoryWithHandlers<EagerGestureRecognizer>(

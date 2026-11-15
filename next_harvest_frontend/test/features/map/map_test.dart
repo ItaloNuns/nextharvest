@@ -258,7 +258,7 @@ void main() {
   );
 
   test(
-    'Imagem aérea usa exportImage RGB, zoom 19 e não inventa data de captura',
+    'Aerial imagery uses RGB exportImage, zoom 18 and no invented capture date',
     () async {
       adapter.body = aerialMetadata;
       final aerial = await MapRepositoryImpl(
@@ -267,9 +267,9 @@ void main() {
       expect(adapter.request!.uri.path, endsWith('ImageServer'));
       expect(adapter.request!.queryParameters['f'], 'json');
       expect(aerial.source, MapSource.aerial);
-      expect(aerial.maxNativeZoom, 19);
+      expect(aerial.maxNativeZoom, 18);
       expect(aerial.periodStart, isNull);
-      expect(aerial.initialZoom, 17);
+      expect(aerial.initialZoom, 6);
       final request = Uri.parse(
         MapTileUrls.build(aerial, const TileCoordinates(59455, 99714, 18), 256),
       );
@@ -401,10 +401,7 @@ void main() {
     final notifier = container.read(mapViewModelProvider.notifier);
     await notifier.load();
     expect(container.read(mapViewModelProvider).status, MapStatus.error);
-    expect(
-      container.read(mapViewModelProvider).error,
-      contains('serviço de mapas'),
-    );
+    expect(container.read(mapViewModelProvider).error, contains('map service'));
     repository.fail = false;
     await notifier.load();
     expect(container.read(mapViewModelProvider).status, MapStatus.ready);

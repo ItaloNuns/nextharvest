@@ -12,6 +12,8 @@ import '../services/map_tile_provider.dart';
 import '../state/map_state.dart';
 import '../state/map_status.dart';
 import 'map_references_overlay.dart';
+import 'my_location_button.dart';
+import '../models/map_coverage.dart';
 import '../../areas/models/area_vertex.dart';
 import '../../areas/providers/area_draft_viewmodel_provider.dart';
 import '../../areas/state/area_draft_status.dart';
@@ -32,6 +34,7 @@ class _MapPageState extends ConsumerState<MapPage> {
   final _mapController = MapController();
   MapTileProvider? _tileProvider;
   int _providerRevision = -1;
+  LatLng? _userLocation;
 
   @override
   void initState() {
@@ -45,14 +48,6 @@ class _MapPageState extends ConsumerState<MapPage> {
   void dispose() {
     _mapController.dispose();
     super.dispose();
-  }
-
-  void _zoom(double delta, int maxZoom) {
-    final camera = _mapController.camera;
-    _mapController.move(
-      camera.center,
-      (camera.zoom + delta).clamp(5.0, maxZoom.toDouble()),
-    );
   }
 
   Future<void> _showAreaDetails() => showModalBottomSheet<void>(
@@ -85,12 +80,12 @@ class _MapPageState extends ConsumerState<MapPage> {
             if (canClose)
               ListTile(
                 leading: const Icon(Icons.check_circle_outline),
-                title: const Text('Fechar área'),
+                title: const Text('Close boundary'),
                 onTap: () => Navigator.pop(context, _AreaVertexAction.close),
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: const Text('Excluir ponto'),
+              title: const Text('Delete point'),
               onTap: () => Navigator.pop(context, _AreaVertexAction.delete),
             ),
           ],
@@ -118,7 +113,7 @@ class _MapPageState extends ConsumerState<MapPage> {
       if (previous?.status != AreaDraftStatus.saved &&
           next.status == AreaDraftStatus.saved) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Área enviada com sucesso.')),
+          const SnackBar(content: Text('Field submitted successfully.')),
         );
       }
     });
@@ -131,14 +126,16 @@ class _MapPageState extends ConsumerState<MapPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final camera = _mapController.camera;
-        var zoom = camera.zoom.clamp(5.0, next.layer!.maxNativeZoom.toDouble());
-        if (next.layer!.source == MapSource.aerial && zoom < 16) zoom = 17;
+        final zoom = camera.zoom.clamp(
+          6.0,
+          next.layer!.maxNativeZoom.toDouble(),
+        );
         _mapController.move(camera.center, zoom);
       });
     });
     final state = ref.watch(mapViewModelProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Next Harvest · Mapa')),
+      appBar: AppBar(title: const Text('Next Harvest · Map')),
       body: SafeArea(
         child: switch (state.status) {
           MapStatus.initial || MapStatus.loading => const Center(
@@ -147,7 +144,7 @@ class _MapPageState extends ConsumerState<MapPage> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Carregando mapa…'),
+                Text('Loading map…'),
               ],
             ),
           ),
@@ -169,7 +166,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                     onPressed: () =>
                         ref.read(mapViewModelProvider.notifier).load(),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Tentar novamente'),
+                    label: const Text('Try again'),
                   ),
                 ],
               ),
@@ -184,23 +181,23 @@ class _MapPageState extends ConsumerState<MapPage> {
   Widget _buildMap(MapState state) {
     final layer = state.layer!;
     if (_tileProvider == null || _providerRevision != state.revision) {
-      // O TileLayer encerra o provider anterior ao trocar sua chave.
+      // TileLayer closes the previous provider when its key changes.
       _tileProvider = MapTileProvider(layer);
       _providerRevision = state.revision;
     }
     final colors = Theme.of(context).colorScheme;
     final bounds = LatLngBounds(
-      const LatLng(24.4, -125),
-      const LatLng(49.5, -66.9),
+      const LatLng(MapCoverage.south, MapCoverage.west),
+      const LatLng(MapCoverage.north, MapCoverage.east),
     );
     return Stack(
       children: [
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
-            initialCenter: const LatLng(39.1, -98.3),
+            initialCenter: const LatLng(39.8, -98.6),
             initialZoom: layer.initialZoom,
-            minZoom: 5,
+            minZoom: 6,
             maxZoom: layer.maxNativeZoom.toDouble(),
             cameraConstraint: CameraConstraint.containCenter(bounds: bounds),
             backgroundColor: colors.surfaceContainerHighest,
@@ -230,7 +227,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                 if (kDebugMode) {
                   final coordinates = tile.coordinates;
                   final url = MapTileUrls.build(layer, coordinates, 256);
-                  debugPrint('[MAP TILE] ${layer.id} · Falha: $url\n$error');
+                  debugPrint('[MAP TILE] ${layer.id} · Failed: $url\n$error');
                 }
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
@@ -250,6 +247,28 @@ class _MapPageState extends ConsumerState<MapPage> {
                 onTileError: () => ref
                     .read(mapViewModelProvider.notifier)
                     .reportReferenceError(state.referenceRevision),
+              ),
+            if (_userLocation != null)
+              IgnorePointer(
+                child: MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _userLocation!,
+                      width: 24,
+                      height: 24,
+                      child: Semantics(
+                        label: 'Your location',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.surface, width: 3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             AreaDrawingLayer(
               mapController: _mapController,
@@ -273,7 +292,7 @@ class _MapPageState extends ConsumerState<MapPage> {
             top: 72,
             right: 12,
             child: IconButton.filledTonal(
-              tooltip: 'Recarregar nomes e limites',
+              tooltip: 'Reload names and boundaries',
               onPressed: () =>
                   ref.read(mapViewModelProvider.notifier).retryReferences(),
               icon: const Icon(Icons.location_off_outlined),
@@ -287,7 +306,7 @@ class _MapPageState extends ConsumerState<MapPage> {
             color: colors.surface,
             borderRadius: BorderRadius.circular(8),
             child: IconButton(
-              tooltip: 'Data e fonte das imagens',
+              tooltip: 'Imagery date and source',
               onPressed: state.isSwitching ? null : () => _showMapInfo(state),
               icon: const Icon(Icons.layers_outlined),
             ),
@@ -300,20 +319,15 @@ class _MapPageState extends ConsumerState<MapPage> {
             elevation: 3,
             color: colors.surface,
             borderRadius: BorderRadius.circular(8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Aproximar',
-                  onPressed: () => _zoom(1, layer.maxNativeZoom),
-                  icon: const Icon(Icons.add),
-                ),
-                IconButton(
-                  tooltip: 'Afastar',
-                  onPressed: () => _zoom(-1, layer.maxNativeZoom),
-                  icon: const Icon(Icons.remove),
-                ),
-              ],
+            child: MyLocationButton(
+              onLocated: (location) {
+                final point = LatLng(location.latitude, location.longitude);
+                setState(() => _userLocation = point);
+                _mapController.move(
+                  point,
+                  16.0.clamp(6.0, layer.maxNativeZoom.toDouble()),
+                );
+              },
             ),
           ),
         ),
@@ -366,7 +380,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                           : ref
                                 .read(mapViewModelProvider.notifier)
                                 .retryTiles(),
-                      child: const Text('Recarregar imagens'),
+                      child: const Text('Reload imagery'),
                     ),
                   ],
                 ),
@@ -394,7 +408,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Camadas do mapa',
+                    'Map layers',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
@@ -410,8 +424,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                       title: Text(source.label),
                       subtitle: Text(
                         source == MapSource.aerial
-                            ? 'Detalhe dos talhões · resolução variável, cerca de 0,3 a 1 m'
-                            : 'Mosaico de 2025 · 10 m · redução de nuvens',
+                            ? 'Field detail · variable resolution, approximately 0.3–1 m'
+                            : '2025 mosaic · 10 m · reduced cloud cover',
                       ),
                       trailing: source == layer.source
                           ? const Icon(Icons.check)
@@ -421,9 +435,9 @@ class _MapPageState extends ConsumerState<MapPage> {
                   const Divider(),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Nomes e limites'),
+                    title: const Text('Names and boundaries'),
                     subtitle: const Text(
-                      'Estados, cidades e regiões (condados), sem vias. O detalhe varia com o zoom.',
+                      'States, cities and counties, without roads. Detail varies with zoom.',
                     ),
                     value: current.referencesVisible,
                     onChanged: (value) => ref
@@ -438,7 +452,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                           .read(mapViewModelProvider.notifier)
                           .retryReferences(),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Recarregar referências'),
+                      label: const Text('Reload references'),
                     ),
                   ],
                   const Divider(),
@@ -449,12 +463,12 @@ class _MapPageState extends ConsumerState<MapPage> {
                   const SizedBox(height: 12),
                   Text(
                     layer.source == MapSource.aerial
-                        ? 'Datas e resolução variam por local. A composição reúne imagens aéreas do programa NAIP; o zoom maior não garante detalhe uniforme em todas as áreas.'
-                        : 'Período: ${layer.periodStart!.year} · Mosaico anual com redução de nuvens. Podem permanecer artefatos e áreas sem dados.',
+                        ? 'Dates and resolution vary by location. This mosaic combines NAIP aerial imagery; higher zoom does not guarantee uniform detail across all areas.'
+                        : 'Period: ${layer.periodStart!.year} · Annual mosaic with reduced cloud cover. Artifacts and gaps may remain.',
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Área: Estados Unidos continentais. As imagens são uma referência para localizar talhões, sem representar necessariamente a safra atual.',
+                    'Coverage: contiguous United States. Imagery helps locate fields and may not represent the current growing season.',
                   ),
                   const SizedBox(height: 16),
                   Text(layer.attribution),
@@ -462,18 +476,18 @@ class _MapPageState extends ConsumerState<MapPage> {
                   Text(layer.license),
                   if (layer.regionalOverrides.isNotEmpty)
                     const Text(
-                      'Teste regional: Colorado e o estado de Washington usam NAIP Plus (GeoPlatform). O restante continua na fonte USDA original. As datas variam por local.',
+                      'Regional trial: Colorado and Washington state use NAIP Plus (GeoPlatform). Other areas use the original USDA source. Dates vary by location.',
                     ),
                   Text(
                     layer.source == MapSource.aerial
-                        ? 'Fonte: https://www.fsa.usda.gov/resources/programs/naip'
-                        : 'Licença: https://creativecommons.org/licenses/by-nc-sa/4.0/',
+                        ? 'Source: https://www.fsa.usda.gov/resources/programs/naip'
+                        : 'License: https://creativecommons.org/licenses/by-nc-sa/4.0/',
                   ),
                   if (current.referenceLayer != null) ...[
                     const SizedBox(height: 12),
-                    Text('Referências: ${current.referenceLayer!.attribution}'),
+                    Text('References: ${current.referenceLayer!.attribution}'),
                     const Text(
-                      'World Boundaries and Places · Esri. Limites administrativos de referência; não são divisas de propriedades.',
+                      'World Boundaries and Places · Esri. Administrative boundaries are for reference and do not represent property boundaries.',
                     ),
                   ],
                 ],

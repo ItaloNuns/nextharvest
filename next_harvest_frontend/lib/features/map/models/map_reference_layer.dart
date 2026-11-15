@@ -1,4 +1,4 @@
-/// Referência administrativa transparente, independente da imagem de fundo.
+/// Transparent administrative reference layer, independent of the background imagery.
 class MapReferenceLayer {
   const MapReferenceLayer({
     required this.id,

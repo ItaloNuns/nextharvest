@@ -38,6 +38,13 @@ class FieldsAdapter implements HttpClientAdapter {
 }
 
 class FakeFieldsRepository implements FieldsRepository {
+  final deleted = <String>[];
+  @override
+  Future<void> deleteField(String fieldId) async {
+    if (fail) throw Exception('Offline');
+    deleted.add(fieldId);
+  }
+
   int calls = 0;
   bool fail = false;
   @override

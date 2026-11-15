@@ -60,12 +60,12 @@ class _AreaDetailsSheetState extends ConsumerState<AreaDetailsSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Enviar área',
+                        'Submit field',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Voltar ao mapa',
+                      tooltip: 'Back to map',
                       onPressed: draft.isSaving
                           ? null
                           : () => Navigator.pop(context),
@@ -81,11 +81,11 @@ class _AreaDetailsSheetState extends ConsumerState<AreaDetailsSheet> {
                   textCapitalization: TextCapitalization.sentences,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Nome da área',
-                    hintText: 'Ex.: Alfafa Nevada',
+                    labelText: 'Field name',
+                    hintText: 'e.g. Nevada Alfalfa',
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Informe o nome da área.'
+                      ? 'Enter the field name.'
                       : null,
                 ),
                 const SizedBox(height: 16),
@@ -96,11 +96,11 @@ class _AreaDetailsSheetState extends ConsumerState<AreaDetailsSheet> {
                   textCapitalization: TextCapitalization.sentences,
                   textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
-                    labelText: 'Cultura atual',
-                    hintText: 'Ex.: Alfafa',
+                    labelText: 'Current crop',
+                    hintText: 'e.g. Alfalfa',
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Informe a cultura atual.'
+                      ? 'Enter the current crop.'
                       : null,
                   onFieldSubmitted: (_) {
                     if (!draft.isSaving) _save();
@@ -126,7 +126,7 @@ class _AreaDetailsSheetState extends ConsumerState<AreaDetailsSheet> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.save_outlined),
-                  label: Text(draft.isSaving ? 'Enviando…' : 'Enviar área'),
+                  label: Text(draft.isSaving ? 'Submitting…' : 'Submit field'),
                 ),
               ],
             ),

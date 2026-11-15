@@ -56,15 +56,16 @@ class MapRepositoryImpl implements MapRepository {
         .findElements('Layer', namespace: '*')
         .firstWhere(
           (element) => _text(element, 'Identifier') == layerId,
-          orElse: () => throw const FormatException(
-            'Mosaico Sentinel-2 2025 indisponível',
-          ),
+          orElse: () =>
+              throw const FormatException('Sentinel-2 2025 mosaic unavailable'),
         );
     final compatible = layer
         .findElements('TileMatrixSetLink', namespace: '*')
         .any((link) => _text(link, 'TileMatrixSet') == matrixId);
     if (!compatible) {
-      throw const FormatException('Mosaico sem grade Web Mercator compatível');
+      throw const FormatException(
+        'The mosaic has no compatible Web Mercator grid',
+      );
     }
     final matrix = contents
         .findElements('TileMatrixSet', namespace: '*')
@@ -87,7 +88,7 @@ class MapRepositoryImpl implements MapRepository {
         .replaceAll('{TileRow}', '{y}')
         .replaceAll('{TileCol}', '{x}');
     if (Uri.parse(template).scheme != 'https') {
-      throw const FormatException('O serviço de tiles deve usar HTTPS');
+      throw const FormatException('The tile service must use HTTPS');
     }
     final result = SatelliteMapLayer(
       id: layerId,
@@ -95,16 +96,16 @@ class MapRepositoryImpl implements MapRepository {
       urlTemplate: template,
       periodStart: DateTime(2025),
       periodEnd: DateTime(2025, 12, 31),
-      // A grade comum anuncia até z21, mas o mosaico tem resolução de 10 m.
+      // The shared grid advertises z21, but the mosaic has 10 m resolution.
       maxNativeZoom: math.min(14, zooms.reduce(math.max)),
       attribution:
           'EOxCloudless https://cloudless.eox.at by EOX IT Services GmbH '
           '(Contains modified Copernicus Sentinel data 2025)',
-      license: 'CC BY-NC-SA 4.0 · Uso não comercial',
+      license: 'CC BY-NC-SA 4.0 · Non-commercial use',
     );
     if (kDebugMode) {
       debugPrint(
-        '[SENTINEL MAP] Camada: ${result.id}; período: 2025; zoom: ${result.maxNativeZoom}',
+        '[SENTINEL MAP] Layer: ${result.id}; period: 2025; zoom: ${result.maxNativeZoom}',
       );
       debugPrint('[SENTINEL MAP] Tiles: ${result.urlTemplate}');
     }
@@ -125,15 +126,17 @@ class MapRepositoryImpl implements MapRepository {
         !(metadata['capabilities'] as String? ?? '')
             .split(',')
             .contains('Image')) {
-      throw const FormatException('Serviço NAIP sem imagem RGB compatível');
+      throw const FormatException(
+        'The NAIP service has no compatible RGB imagery',
+      );
     }
     if (kDebugMode) {
-      debugPrint('[MAP] Imagem aérea USDA: $aerialUrl/exportImage');
+      debugPrint('[MAP] USDA aerial imagery: $aerialUrl/exportImage');
     }
     return const SatelliteMapLayer(
       id: aerialLayerId,
       source: MapSource.aerial,
-      name: 'Imagem aérea · USDA NAIP',
+      name: 'Aerial imagery · USDA NAIP',
       urlTemplate: '$aerialUrl/exportImage',
       isImageService: true,
       regionalOverrides: [
@@ -146,11 +149,12 @@ class MapRepositoryImpl implements MapRepository {
           urlTemplate: regionalAerialUrl,
         ),
       ],
-      maxNativeZoom: 19,
+      // Conservative shared ceiling for USDA and regional NAIP Plus imagery.
+      maxNativeZoom: 18,
       attribution:
           'USDA Farm Production and Conservation · NAIP\n'
-          'Colorado e Washington: NAIP Plus · USDA FPAC / USFS GTAC / DOI GeoPlatform',
-      license: 'Fonte: USDA NAIP · datas e resolução variam por local',
+          'Colorado and Washington: NAIP Plus · USDA FPAC / USFS GTAC / DOI GeoPlatform',
+      license: 'Source: USDA NAIP · dates and resolution vary by location',
     );
   }
 
