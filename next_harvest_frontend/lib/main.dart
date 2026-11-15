@@ -3,6 +3,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/home/view/home_page.dart';
+import 'features/authentication/providers/auth_session_provider.dart';
+import 'features/authentication/view/auth_page.dart';
+import 'features/authentication/view/splash_page.dart';
+import 'features/authentication/providers/session_bootstrap_provider.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -11,18 +15,28 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final startup = ref.watch(sessionBootstrapProvider);
+    final authenticated = ref.watch(
+      authSessionProvider.select((session) => session != null),
+    );
     return MaterialApp(
+      key: ValueKey(authenticated),
       title: 'Next Harvest',
       theme: NextHarvestTheme.light(),
       darkTheme: NextHarvestTheme.dark(),
       themeMode: ThemeMode.system,
-      home: const HomePage(),
+      home: startup.when(
+        skipLoadingOnRefresh: false,
+        loading: () => const SplashPage(),
+        error: (_, _) => const SplashPage(hasError: true),
+        data: (_) => authenticated ? const HomePage() : const AuthPage(),
+      ),
     );
   }
 }

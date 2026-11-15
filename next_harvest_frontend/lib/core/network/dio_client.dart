@@ -17,18 +17,29 @@ class DioClient {
       ) {
     if (kDebugMode) {
       dio.interceptors.add(
-        LogInterceptor(
-          requestHeader: false,
-          requestBody: false,
-          responseHeader: false,
-          responseBody: true,
-          error: true,
-          logPrint: (message) {
-            final text = message.toString();
-            // O catálogo WMTS tem vários MB; mantém o console utilizável.
+        InterceptorsWrapper(
+          onResponse: (response, handler) {
+            debugPrint(
+              '[DIO] ${response.requestOptions.method} '
+              '${response.requestOptions.uri} → ${response.statusCode}',
+            );
+            // Authentication responses contain access tokens.
+            final text =
+                response.requestOptions.uri.path.startsWith('/api/v1/auth/')
+                ? '[authentication response omitted]'
+                : response.data.toString();
             debugPrint(
               '[DIO] ${text.length > 4000 ? '${text.substring(0, 4000)}… [resposta truncada: ${text.length} caracteres]' : text}',
             );
+            handler.next(response);
+          },
+          onError: (error, handler) {
+            debugPrint(
+              '[DIO] ${error.requestOptions.method} '
+              '${error.requestOptions.uri} → '
+              '${error.response?.statusCode ?? error.type.name}',
+            );
+            handler.next(error);
           },
         ),
       );
