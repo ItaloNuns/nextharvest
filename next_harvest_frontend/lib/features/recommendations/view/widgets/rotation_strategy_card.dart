@@ -8,9 +8,13 @@ class RotationStrategyCard extends StatelessWidget {
     super.key,
     required this.strategy,
     required this.index,
+    this.onSimulateScenario,
+    this.showSimulateScenario = true,
   });
   final RotationStrategy strategy;
   final int index;
+  final VoidCallback? onSimulateScenario;
+  final bool showSimulateScenario;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +145,14 @@ class RotationStrategyCard extends StatelessWidget {
             items: explanation.risksRequiringLocalReview,
             type: RotationInsightType.risk,
           ),
+          if (showSimulateScenario) ...[
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: onSimulateScenario,
+              icon: const Icon(Icons.science_outlined),
+              label: const Text('Simulate Scenario'),
+            ),
+          ],
         ],
       ),
     );
