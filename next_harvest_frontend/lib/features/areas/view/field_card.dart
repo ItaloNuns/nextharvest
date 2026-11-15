@@ -13,7 +13,7 @@ class FieldCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final radius = BorderRadius.circular(20);
+    final radius = BorderRadius.circular(16);
     return Material(
       color: Colors.transparent,
       borderRadius: radius,
@@ -31,7 +31,7 @@ class FieldCard extends StatelessWidget {
           ),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -39,16 +39,17 @@ class FieldCard extends StatelessWidget {
                   field.name,
                   style: GoogleFonts.ibmPlexSansThai(
                     textStyle: theme.textTheme.headlineSmall,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: colors.onSurface,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
                 Text(
                   field.currentCrop.isNotEmpty
-                      ? field.currentCrop
-                      : 'No current crop',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                      ? 'Current Crop: ${field.currentCrop}'
+                      : 'Current Crop: Not specified',
+                  style: GoogleFonts.inter(
+                    textStyle: theme.textTheme.bodyMedium,
                     color: colors.onSurfaceVariant,
                   ),
                 ),
