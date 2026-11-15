@@ -28,30 +28,30 @@ router = APIRouter()
 def _message(result: HarmonizerResult) -> str:
     if result.complete:
         if result.et_source == "openet":
-            et_bit = " ET anual via OpenET no polígono."
+            et_bit = " Annual ET from OpenET over the polygon."
         elif result.et_source == "power":
-            et_bit = " ET anual via NASA POWER (EVPTRNS); OpenET indisponível."
+            et_bit = " Annual ET from NASA POWER (EVPTRNS); OpenET unavailable."
         else:
-            et_bit = " ET ainda indisponível (OpenET e POWER EVPTRNS vazios)."
+            et_bit = " Annual ET still unavailable (OpenET and POWER EVPTRNS empty)."
         extra = ""
         if result.failures:
-            extra = " Avisos: " + " | ".join(result.failures)
+            extra = " Warnings: " + " | ".join(result.failures)
         if result.summary.rootzone_source == "power_gwetroot":
-            moisture_bit = " Umidade radicular via NASA POWER (GWETROOT; proxy, não SMAP)."
+            moisture_bit = " Root-zone moisture via NASA POWER (GWETROOT; proxy, not SMAP)."
         else:
-            moisture_bit = " SMAP satélite ainda não entra."
+            moisture_bit = " Satellite SMAP not used yet."
         if result.summary.bare_field_months:
             months = ", ".join(result.summary.bare_field_months)
-            bare_bit = f" Meses de possível solo nu (proxy POWER): {months}."
+            bare_bit = f" Possible bare-soil months (POWER proxy): {months}."
         else:
-            bare_bit = " Sem meses de solo nu no proxy POWER."
+            bare_bit = " No bare-soil months in the POWER proxy."
         return (
-            "Diagnóstico montado com NASA POWER (clima no centroide) e USDA SSURGO "
-            f"(solo no polígono).{et_bit}{moisture_bit}{bare_bit}{extra}"
+            "Diagnosis built with NASA POWER (climate at centroid) and USDA SSURGO "
+            f"(soil over the polygon).{et_bit}{moisture_bit}{bare_bit}{extra}"
         )
     if result.failures:
-        return "Diagnóstico parcial. " + " | ".join(result.failures)
-    return "Diagnóstico parcial: uma das fontes externas não devolveu dados."
+        return "Partial diagnosis. " + " | ".join(result.failures)
+    return "Partial diagnosis: an external source returned no data."
 
 
 async def _persist(
@@ -118,7 +118,7 @@ async def analyze_field(
     ):
         pass
     else:
-        message = f"{message} O talhão não foi gravado (banco indisponível)."
+        message = f"{message} Field was not saved (database unavailable)."
 
     placeholder = not result.complete
     analysis_meta = from_harmonizer(result)

@@ -18,12 +18,12 @@ router = APIRouter()
 
 
 def _message(*, nass_used: bool, et: float, llm: bool) -> str:
-    et_bit = " ET do diagnóstico salvo" if et > 0 else " sem ET no diagnóstico"
-    nass_bit = " e produtividades NASS do condado" if nass_used else " e catálogo interno de mercado"
-    llm_bit = " Explicações enriquecidas com OpenAI." if llm else ""
+    et_bit = " with saved-diagnosis ET" if et > 0 else " without ET in the diagnosis"
+    nass_bit = " and county NASS yields" if nass_used else " and the internal market catalog"
+    llm_bit = " Explanations enriched with OpenAI." if llm else ""
     return (
-        "Três rotações calculadas com o diagnóstico já salvo (NASA POWER, SSURGO"
-        f"{et_bit}){nass_bit}. Sem nova chamada à NASA.{llm_bit}"
+        "Three rotations computed from the saved diagnosis (NASA POWER, SSURGO"
+        f"{et_bit}){nass_bit}. No new NASA call.{llm_bit}"
     )
 
 
@@ -39,8 +39,8 @@ async def recommend_rotations(
         ...,
         openapi_examples={
             "nevada_demo": {
-                "summary": "Prioridades demo Nevada",
-                "description": "Troque field_id pelo retorno do analyze.",
+                "summary": "Nevada demo priorities",
+                "description": "Replace field_id with the value from POST /fields/analyze.",
                 "value": RECOMMEND_BODY_EXAMPLE,
             }
         },

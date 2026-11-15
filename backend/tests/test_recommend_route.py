@@ -41,7 +41,7 @@ def test_recommend_after_analyze(mock_nasa_usda) -> None:
         assert body["harmonized_summary"]["annual_precip_mm"] == 15.0
         assert len(body["strategies"]) == 3
         assert body["strategies"][0]["is_baseline"] is True
-        assert "Alfafa" in body["strategies"][0]["sequence"][0]
+        assert "Alfalfa" in body["strategies"][0]["sequence"][0]
         assert body["location"]["lat"] == pytest.approx(39.475, abs=1e-3)
         assert body["location"]["lon"] == pytest.approx(-118.775, abs=1e-3)
         assert body["location"]["state"] == "NV"
@@ -51,11 +51,11 @@ def test_recommend_after_analyze(mock_nasa_usda) -> None:
         gaps = " ".join(body["strategies"][0]["explanation"]["information_gaps_and_uncertainty"])
         assert "15.0 mm" in evidence
         if body["harmonized_summary"]["annual_et_demand_mm"] > 0:
-            assert "Demanda evaporativa" in evidence
+                assert "evaporative demand" in evidence
         if get_settings().nass_api_key:
             assert "QuickStats" in evidence
         else:
-            assert "ainda não foram consultados" in gaps
+            assert "were not queried" in gaps
 
 
 def test_recommend_unknown_field() -> None:

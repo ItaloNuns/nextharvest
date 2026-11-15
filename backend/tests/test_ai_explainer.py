@@ -49,7 +49,7 @@ def _strategy() -> RotationStrategy:
     radar = _radar()
     return RotationStrategy(
         strategy_id="rot_baseline",
-        name="Estratégia 1 (Atual): Alfafa",
+        name="Strategy 1 (Current): Alfalfa",
         is_baseline=True,
         sequence=["Alfafa"],
         metrics_radar=radar,
@@ -72,9 +72,9 @@ def _location() -> Location:
 def _llm_explanation() -> RotationExplanation:
     return RotationExplanation(
         why_suggested="Texto gerado pelo modelo para a baseline.",
-        supporting_evidence=["Chuva anual de 15.0 mm no diagnóstico POWER."],
-        expected_benefits=["Mantém a linha de base da alfafa."],
-        information_gaps_and_uncertainty=["SMAP e solo nu não entram nesta recomendação."],
+        supporting_evidence=["Annual precipitation 15.0 mm in the POWER diagnosis."],
+        expected_benefits=["Keeps the alfalfa baseline."],
+        information_gaps_and_uncertainty=["SMAP and bare soil are not in this recommendation."],
         risks_requiring_local_review=["Validar com agrônomo local antes do plantio."],
     )
 

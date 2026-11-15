@@ -1,5 +1,8 @@
-# Análise do Desafio e Arquitetura de Sistema — **NextHarvest**
-**Desafio NASA Space Apps 2026:** [*Field Shift: Adapting Farms with NASA Data*](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)
+# Challenge analysis and system architecture — **NextHarvest**
+
+> **Note:** Sections below retain the original Portuguese narrative for the team. English API docs: [README.md](README.md), [backend/README.md](backend/README.md), [backend/API_ROTAS.md](backend/API_ROTAS.md).
+
+**NASA Space Apps 2026:** [*Field Shift: Adapting Farms with NASA Data*](https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/)
 
 ---
 

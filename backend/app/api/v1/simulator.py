@@ -19,8 +19,8 @@ logger = logging.getLogger("nextharvest.simulate")
 router = APIRouter()
 
 _MESSAGE = (
-    "Scores recalculados em memória com chuva e temperatura ajustadas. "
-    "Sem nova chamada à NASA, OpenET ou NASS."
+    "Scores recalculated in memory with adjusted rainfall and temperature. "
+    "No new call to NASA, OpenET, or NASS."
 )
 
 
@@ -36,8 +36,8 @@ async def simulate_rotations(
         ...,
         openapi_examples={
             "nevada_demo": {
-                "summary": "Prioridades + chuva -25% e +2 °C",
-                "description": "Troque field_id pelo retorno do analyze.",
+                "summary": "Priorities + rain -25% and +2 °C",
+                "description": "Replace field_id with the value from POST /fields/analyze.",
                 "value": SIMULATE_BODY_EXAMPLE,
             }
         },

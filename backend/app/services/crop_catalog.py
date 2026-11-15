@@ -6,7 +6,7 @@ FORAGE_CODES = frozenset({"alfalfa", "oats", "sorghum"})
 
 CROPS: dict[str, dict[str, object]] = {
     "alfalfa": {
-        "name": "Alfafa",
+        "name": "Alfalfa",
         "family": "Fabaceae",
         "season": "perennial",
         "kc": 1.15,
@@ -16,7 +16,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 90,
     },
     "corn": {
-        "name": "Milho",
+        "name": "Corn",
         "family": "Poaceae",
         "season": "summer",
         "kc": 1.10,
@@ -26,7 +26,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 88,
     },
     "soybeans": {
-        "name": "Soja",
+        "name": "Soybeans",
         "family": "Fabaceae",
         "season": "summer",
         "kc": 0.90,
@@ -36,7 +36,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 85,
     },
     "sorghum": {
-        "name": "Sorgo Tolerante à Seca",
+        "name": "Drought-tolerant sorghum",
         "family": "Poaceae",
         "season": "summer",
         "kc": 0.65,
@@ -46,7 +46,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 75,
     },
     "winter_wheat": {
-        "name": "Trigo/Triticale de Inverno",
+        "name": "Winter wheat/triticale",
         "family": "Poaceae",
         "season": "winter",
         "kc": 0.70,
@@ -56,7 +56,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 78,
     },
     "chickpea": {
-        "name": "Grão-de-Bico",
+        "name": "Chickpea",
         "family": "Fabaceae",
         "season": "winter",
         "kc": 0.60,
@@ -66,7 +66,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 82,
     },
     "rye_vetch_cover": {
-        "name": "Centeio + Ervilhaca (Cobertura)",
+        "name": "Rye + vetch (cover crop)",
         "family": "MixedCover",
         "season": "winter",
         "kc": 0.45,
@@ -76,7 +76,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 45,
     },
     "sunflower": {
-        "name": "Girassol",
+        "name": "Sunflower",
         "family": "Asteraceae",
         "season": "summer",
         "kc": 0.70,
@@ -96,7 +96,7 @@ CROPS: dict[str, dict[str, object]] = {
         "rev": 83,
     },
     "oats": {
-        "name": "Aveia Forrageira",
+        "name": "Forage oats",
         "family": "Poaceae",
         "season": "winter",
         "kc": 0.65,
@@ -191,6 +191,15 @@ def crop_spec(code: str, display_name: str | None = None) -> dict[str, object]:
 
 def crop_display_name(code: str, fallback: str | None = None) -> str:
     return str(crop_spec(code, fallback)["name"])
+
+
+def display_crop_name(free_text: str) -> str:
+    """English catalog label for a user-supplied crop name, or the original text."""
+    code = resolve_crop(free_text)
+    if code:
+        return str(CROPS[code]["name"])
+    cleaned = free_text.strip()
+    return cleaned or "current crop"
 
 
 def baseline_codes(current_crop: str) -> tuple[str, ...]:

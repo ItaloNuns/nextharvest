@@ -10,27 +10,27 @@ KNOWLEDGE_BASE: list[dict[str, object]] = [
         "id": "nrcs_legume_n",
         "tags": {"alfalfa", "soybeans", "chickpea", "rye_vetch_cover", "fabaceae", "nitrogen"},
         "text": (
-            "USDA NRCS Soil Health: Leguminosas (Fabaceae) fixam nitrogênio atmosférico via "
-            "simbiose com Rhizobium, reduzindo a necessidade de fertilizante sintético na "
-            "cultura subsequente (gramínea/Poaceae)."
+            "USDA NRCS Soil Health: Legumes (Fabaceae) fix atmospheric nitrogen via "
+            "Rhizobium symbiosis, reducing synthetic fertilizer needs for the "
+            "following grass (Poaceae) crop."
         ),
     },
     {
         "id": "nrcs_bare_soil",
         "tags": {"winter_wheat", "rye_vetch_cover", "oats", "canola", "bare", "erosion"},
         "text": (
-            "USDA NRCS Cover Crops: Manter raízes vivas e cobertura de inverno elimina janelas "
-            "de solo exposto (NDVI < 0.22), reduzindo o impacto cinético da chuva (GPM IMERG) "
-            "e a erosão laminar."
+            "USDA NRCS Cover Crops: Living roots and winter cover remove bare-soil "
+            "windows (NDVI < 0.22), reducing raindrop impact (GPM IMERG) "
+            "and sheet erosion."
         ),
     },
     {
         "id": "fao_drought_kc",
         "tags": {"sorghum", "chickpea", "sunflower", "water", "drought"},
         "text": (
-            "FAO GAEZ v4: Sorgo, grão-de-bico e girassol possuem menor coeficiente de cultura "
-            "(Kc 0.60-0.70) e sistema radicular profundo, mantendo produtividade sob déficit "
-            "hídrico (OpenET/ECOSTRESS)."
+            "FAO GAEZ v4: Sorghum, chickpea, and sunflower have lower crop coefficients "
+            "(Kc 0.60–0.70) and deep root systems, maintaining yield under water "
+            "deficit (OpenET/ECOSTRESS)."
         ),
     },
     {
@@ -45,18 +45,18 @@ KNOWLEDGE_BASE: list[dict[str, object]] = [
             "asteraceae",
         },
         "text": (
-            "USDA Ag Data Commons: Alternar famílias botânicas distintas interrompe o ciclo de "
-            "patógenos de solo, nematoides e pragas específicas (como gorgulho-da-alfafa e "
-            "lagarta-da-raiz do milho)."
+            "USDA Ag Data Commons: Rotating distinct botanical families breaks "
+            "cycles of soil pathogens, nematodes, and specialist pests (e.g., "
+            "alfalfa weevil and corn rootworm)."
         ),
     },
     {
         "id": "nasa_sat_vs_ground",
         "tags": {"smap", "uncertainty", "satellite", "ground", "lab"},
         "text": (
-            "NASA Earthdata: SMAP (9 km) e NASA POWER (50 km) medem tendências regionais de "
-            "umidade e clima, mas não substituem análise química de solo local (NPK, pH, "
-            "salinidade) e inspeção de campo."
+            "NASA Earthdata: SMAP (9 km) and NASA POWER (50 km) show regional "
+            "moisture and climate trends but do not replace local soil chemistry "
+            "(NPK, pH, salinity) and field inspection."
         ),
     },
 ]

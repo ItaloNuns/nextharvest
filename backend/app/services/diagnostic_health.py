@@ -47,35 +47,35 @@ def _water_dimension(summary: HarmonizedSummary) -> DiagnosticDimension:
             return DiagnosticDimension(
                 id="water",
                 status="critical",
-                label="Déficit hídrico crítico (chuva − ET).",
+                label="Critical water deficit (precipitation − ET).",
             )
         if deficit <= -40:
             return DiagnosticDimension(
                 id="water",
                 status="warning",
-                label="Déficit hídrico elevado (chuva − ET).",
+                label="Elevated water deficit (precipitation − ET).",
             )
         return DiagnosticDimension(
             id="water",
             status="ok",
-            label="Balanço hídrico em faixa aceitável.",
+            label="Water balance in an acceptable range.",
         )
     if precip < 100:
         return DiagnosticDimension(
             id="water",
             status="critical",
-            label="Precipitação anual muito baixa (sem ET no diagnóstico).",
+            label="Very low annual precipitation (no ET in this diagnosis).",
         )
     if precip < 400:
         return DiagnosticDimension(
             id="water",
             status="warning",
-            label="Precipitação abaixo do recorte de referência (sem ET).",
+            label="Precipitation below the reference threshold (no ET).",
         )
     return DiagnosticDimension(
         id="water",
         status="ok",
-        label="Precipitação anual em faixa aceitável (sem ET).",
+        label="Annual precipitation in an acceptable range (no ET).",
     )
 
 
@@ -85,7 +85,7 @@ def _soil_dimension(summary: HarmonizedSummary) -> DiagnosticDimension:
         return DiagnosticDimension(
             id="soil",
             status="ok",
-            label="Solo ainda sem mapa SSURGO para avaliar.",
+            label="No SSURGO map yet for soil review.",
         )
     om = float(soil.organic_matter_pct or 0)
     k_factor = float(soil.erosion_k_factor or 0)
@@ -93,18 +93,18 @@ def _soil_dimension(summary: HarmonizedSummary) -> DiagnosticDimension:
         return DiagnosticDimension(
             id="soil",
             status="critical",
-            label="Matéria orgânica muito baixa ou solo com alto risco de erosão.",
+            label="Very low organic matter or high soil erosion risk.",
         )
     if om < 2.0 or k_factor >= 0.32:
         return DiagnosticDimension(
             id="soil",
             status="warning",
-            label="Matéria orgânica ou fator K de erosão em faixa de atenção.",
+            label="Organic matter or erosion K factor needs attention.",
         )
     return DiagnosticDimension(
         id="soil",
         status="ok",
-        label="Matéria orgânica e K de erosão em faixa aceitável.",
+        label="Organic matter and erosion K in an acceptable range.",
     )
 
 
@@ -130,28 +130,28 @@ def _sources_dimension(
         return DiagnosticDimension(
             id="sources",
             status="critical",
-            label="Diagnóstico incompleto ou ainda sem resumo gravado.",
+            label="Incomplete diagnosis or no saved summary yet.",
         )
     if climate_missing:
         return DiagnosticDimension(
             id="sources",
             status="warning",
-            label="Clima (NASA POWER) indisponível neste diagnóstico.",
+            label="Climate (NASA POWER) unavailable in this diagnosis.",
         )
     if soil_missing:
         return DiagnosticDimension(
             id="sources",
             status="warning",
-            label="Solo SSURGO indisponível neste diagnóstico.",
+            label="SSURGO soil unavailable in this diagnosis.",
         )
     if et_missing:
         return DiagnosticDimension(
             id="sources",
             status="warning",
-            label="ET anual indisponível; usando só precipitação.",
+            label="Annual ET unavailable; using precipitation only.",
         )
     return DiagnosticDimension(
         id="sources",
         status="ok",
-        label="Fontes de clima e solo disponíveis.",
+        label="Climate and soil sources available.",
     )

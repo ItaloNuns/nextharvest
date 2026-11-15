@@ -24,6 +24,6 @@ async def require_analyzed_field(request: Request, field_id: str, user: User) ->
     if not field.last_summary:
         raise HTTPException(
             status_code=409,
-            detail="Talhão sem diagnóstico. Rode POST /fields/analyze antes.",
+            detail="Field has no diagnosis. Run POST /fields/analyze first.",
         )
     return field

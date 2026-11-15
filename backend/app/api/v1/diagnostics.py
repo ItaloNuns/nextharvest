@@ -25,11 +25,11 @@ async def field_diagnostics(
     if field.last_summary:
         summary = HarmonizedSummary.model_validate(field.last_summary)
         placeholder = False
-        message = "Resumo persistido na última análise. Sem nova chamada à NASA/USDA."
+        message = "Persisted summary from the last analysis. No new NASA/USDA call."
     else:
         summary = empty_summary()
         placeholder = True
-        message = "Talhão encontrado, mas ainda sem resumo harmonizado gravado."
+        message = "Field found but no harmonized summary is stored yet."
 
     stored = field.last_analysis_meta if isinstance(field.last_analysis_meta, dict) else None
     analysis_meta = from_stored(stored, summary)

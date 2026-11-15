@@ -15,6 +15,7 @@ from app.services.crop_catalog import (
     CANDIDATE_SEQUENCES,
     baseline_codes,
     crop_display_name,
+    display_crop_name,
     crop_spec,
     forage_fraction,
     has_valid_family_succession,
@@ -194,6 +195,7 @@ class RotationEngine:
         county: str = "",
         nass_used: bool = False,
     ) -> list[RotationStrategy]:
+        current_crop_label = display_crop_name(current_crop)
         base_codes = baseline_codes(current_crop)
         baseline = _candidate(base_codes, summary, current_crop, market_overrides)
         baseline.update(
@@ -201,8 +203,8 @@ class RotationEngine:
                 "strategy_id": "rot_baseline",
                 "role": "baseline",
                 "is_baseline": True,
-                "name": "Estratégia 1 (Atual): " + " → ".join(baseline["sequence"])
-                + (" contínua" if len(base_codes) == 1 else ""),
+                "name": "Strategy 1 (Current): " + " → ".join(baseline["sequence"])
+                + (" (continuous)" if len(base_codes) == 1 else ""),
             }
         )
 
@@ -239,14 +241,14 @@ class RotationEngine:
             "strategy_id": "rot_water_resilient",
             "role": "water",
             "is_baseline": False,
-            "name": "Estratégia 2 (Resiliência hídrica): " + " → ".join(water_best["sequence"]),
+            "name": "Strategy 2 (Water resilience): " + " → ".join(water_best["sequence"]),
         }
         soil_best = {
             **soil_best,
             "strategy_id": "rot_soil_market",
             "role": "soil",
             "is_baseline": False,
-            "name": "Estratégia 3 (Solo e prioridades): " + " → ".join(soil_best["sequence"]),
+            "name": "Strategy 3 (Soil and priorities): " + " → ".join(soil_best["sequence"]),
         }
 
         baseline_radar = MetricsRadar.model_validate(baseline["metrics_radar"])
@@ -264,7 +266,7 @@ class RotationEngine:
                     explanation=explain_strategy(
                         role=item["role"],
                         sequence_label=label,
-                        current_crop=current_crop,
+                        current_crop=current_crop_label,
                         summary=summary,
                         priorities=priorities,
                         radar=radar,

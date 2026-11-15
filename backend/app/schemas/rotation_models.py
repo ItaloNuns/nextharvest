@@ -154,7 +154,7 @@ class FieldAnalyzeRequest(BaseModel):
         }
     )
 
-    name: str = "Talhão"
+    name: str = "Field"
     current_crop: str = Field(min_length=1)
     geometry: dict[str, Any]
 
@@ -203,9 +203,9 @@ class RecommendRequest(BaseModel):
         }
     )
 
-    field_id: str = Field(min_length=1, description="ID retornado pelo POST /fields/analyze")
+    field_id: str = Field(min_length=1, description="ID returned by POST /fields/analyze")
     priorities: FarmerPriorities = Field(
-        description="Prioridades do produtor (sliders 0–5). Obrigatório no app; exemplo pré-preenchido no Swagger."
+        description="Farmer priorities (sliders 0–5). Required in the app; Swagger pre-fills an example."
     )
 
 
@@ -216,22 +216,22 @@ class SimulationRequest(BaseModel):
         }
     )
 
-    field_id: str = Field(min_length=1, description="ID retornado pelo POST /fields/analyze")
+    field_id: str = Field(min_length=1, description="ID returned by POST /fields/analyze")
     delta_precip_pct: float = Field(
         default=0,
         ge=-30,
         le=30,
-        description="Variação percentual na chuva anual (ex.: -25).",
+        description="Percent change in annual rainfall (e.g. -25).",
     )
     delta_temp_c: float = Field(
         default=0,
         ge=0,
         le=4,
-        description="Aumento de temperatura em °C para recálculo da ET (ex.: 2).",
+        description="Temperature increase in °C for ET recalculation (e.g. 2).",
     )
     priorities: FarmerPriorities = Field(
         default_factory=demo_farmer_priorities,
-        description="Mesmas prioridades do Recommend; omitir na API usa o perfil demo Nevada.",
+        description="Same priorities as Recommend; omit to use the Nevada demo profile.",
     )
 
 
@@ -276,17 +276,17 @@ def empty_summary() -> HarmonizedSummary:
 
 
 _PLACEHOLDER_MESSAGE = (
-    "Resposta de exemplo (Churchill County, NV) do relatório de arquitetura. "
-    "O motor de fusão e o MCDA ainda não calculam este talhão."
+    "Sample response (Churchill County, NV) from the architecture report. "
+    "The fusion engine and MCDA do not compute this field yet."
 )
 
 
 def placeholder_strategies() -> list[RotationStrategy]:
     baseline = RotationStrategy(
         strategy_id="rot_baseline",
-        name="Estratégia 1 (Atual): Alfafa Contínua (5+ anos) com Pousio na Reforma",
+        name="Strategy 1 (Current): Continuous alfalfa (5+ years) with renovation fallow",
         is_baseline=True,
-        sequence=["Alfafa (Ano 1-4)", "Pousio de Reforma (Outono/Inverno)", "Alfafa (Replantio)"],
+        sequence=["Alfalfa (years 1-4)", "Renovation fallow (fall/winter)", "Alfalfa (replant)"],
         metrics_radar=MetricsRadar(
             water_efficiency_score=38,
             soil_health_organic_matter_score=65,
@@ -297,37 +297,37 @@ def placeholder_strategies() -> list[RotationStrategy]:
         ),
         explanation=RotationExplanation(
             why_suggested=(
-                "Representa o manejo histórico atual identificado pelo USDA CDL "
-                "no talhão para servir como linha de base comparativa."
+                "Represents current historical management identified by USDA CDL "
+                "on the field as a comparative baseline."
             ),
             supporting_evidence=[
-                "OpenET e ECOSTRESS indicam demanda evaporativa de 1.180 mm/ano no verão com índice ESI caindo para 0.42 em julho-agosto.",
-                "SMAP L4 mostra anomalia de umidade radicular de -1.45 desvios-padrão nos últimos 3 verões.",
-                "Sentinel-2/Landsat detectam 4 meses de solo exposto (NDVI < 0.20) no ano de reforma do estande.",
+                "OpenET and ECOSTRESS indicate 1,180 mm/yr evaporative demand in summer with ESI dropping to 0.42 in Jul–Aug.",
+                "SMAP L4 shows root-zone moisture anomaly of −1.45 standard deviations over the last 3 summers.",
+                "Sentinel-2/Landsat detect 4 bare-soil months (NDVI < 0.20) in the stand renovation year.",
             ],
             expected_benefits=[
-                "Alta fixação biológica de nitrogênio e cobertura perene durante os anos estabelecidos.",
-                "Mercado local consolidado para feno de alfafa (USDA AMS Market News).",
+                "High biological nitrogen fixation and perennial cover during established years.",
+                "Established local market for alfalfa hay (USDA AMS Market News).",
             ],
             information_gaps_and_uncertainty=[
-                "O pixel do SMAP (9 km) captura a média regional do vale irrigado e não mede a umidade exata por válvula de irrigação.",
-                "Não há dados de satélite sobre compactação subsuperficial ou nematoides de galha acumulados.",
+                "The SMAP pixel (9 km) captures regional irrigated-valley averages, not moisture per irrigation valve.",
+                "No satellite data on subsurface compaction or accumulated root-knot nematodes.",
             ],
             risks_requiring_local_review=[
-                "Autotoxicidade alelopática da alfafa ao replantar sem cultura intermediária.",
-                "Alto consumo hídrico em anos de corte de alocação de água superficial (USGS NWIS).",
+                "Alfalfa autotoxicity when replanting without an intermediate crop.",
+                "High water use in years with surface-water allocation cuts (USGS NWIS).",
             ],
         ),
     )
     water = RotationStrategy(
         strategy_id="rot_water_resilient",
-        name="Estratégia 2 (Economia de Água & Quebra de Pragas): Alfafa → Triticale/Cevada de Inverno → Sorgo Forrageiro BMR",
+        name="Strategy 2 (Water savings & pest break): Alfalfa → winter triticale → forage sorghum",
         is_baseline=False,
         sequence=[
-            "Alfafa (Encerramento)",
-            "Triticale de Inverno (Out-Abr)",
-            "Sorgo Forrageiro Tolerante à Seca (Mai-Set)",
-            "Retorno à Alfafa ou Leguminosa",
+            "Alfalfa (termination)",
+            "Winter triticale (Oct–Apr)",
+            "Drought-tolerant forage sorghum (May–Sep)",
+            "Return to alfalfa or legume",
         ],
         metrics_radar=MetricsRadar(
             water_efficiency_score=86,
@@ -339,35 +339,35 @@ def placeholder_strategies() -> list[RotationStrategy]:
         ),
         explanation=RotationExplanation(
             why_suggested=(
-                "Alinha-se à prioridade máxima de redução de uso de água e eliminação "
-                "do período de solo exposto no inverno, mantendo produção de forragem."
+                "Aligns with top priority to cut water use and remove winter bare-soil "
+                "periods while keeping forage production."
             ),
             supporting_evidence=[
-                "NASA POWER e PRISM mostram que o cultivo de inverno aproveita a janela de menor déficit de pressão de vapor e as chuvas de inverno.",
-                "FAO GAEZ v4 e OpenET confirmam redução de cerca de 32% na evapotranspiração sazonal com Sorgo e Triticale frente à alfafa em pleno verão.",
+                "NASA POWER and PRISM show winter crops use the window of lower vapor-pressure deficit and winter rains.",
+                "FAO GAEZ v4 and OpenET confirm ~32% lower seasonal ET with sorghum and triticale vs full-summer alfalfa.",
             ],
             expected_benefits=[
-                "Aproveita o crédito de nitrogênio deixado pela alfafa sem exigir adubação nitrogenada pesada.",
-                "Elimina a janela de solo exposto de novembro a fevereiro.",
-                "Interrompe o ciclo de pragas e plantas daninhas perenes da alfafa.",
+                "Uses nitrogen credit from alfalfa without heavy synthetic N fertilizer.",
+                "Removes the November–February bare-soil window.",
+                "Breaks perennial alfalfa pest and weed cycles.",
             ],
             information_gaps_and_uncertainty=[
-                "A condutividade elétrica da água de irrigação local não é visível via satélite.",
-                "Preços regionais de silagem de triticale têm menor liquidez pública no USDA AMS do que a alfafa.",
+                "Local irrigation water electrical conductivity is not visible from satellites.",
+                "Regional triticale silage prices have less public USDA AMS liquidity than alfalfa.",
             ],
             risks_requiring_local_review=[
-                "Validar com agrônomo local o risco de acúmulo de nitratos ou ácido prússico no sorgo forrageiro em caso de geada precoce.",
+                "Confirm with a local agronomist nitrate or prussic-acid risk in forage sorghum after early frost.",
             ],
         ),
     )
     soil = RotationStrategy(
         strategy_id="rot_soil_income",
-        name="Estratégia 3 (Solo, Cobertura de Inverno e Renda): Alfafa → Trigo de Inverno → Leguminosa de Mercado",
+        name="Strategy 3 (Soil, winter cover & income): Alfalfa → winter wheat → market legume",
         is_baseline=False,
         sequence=[
-            "Alfafa (Encerramento)",
-            "Trigo de Inverno (cobertura e grão)",
-            "Leguminosa de mercado (soja ou alfafa replantada)",
+            "Alfalfa (termination)",
+            "Winter wheat (cover and grain)",
+            "Market legume (soybeans or replanted alfalfa)",
         ],
         metrics_radar=MetricsRadar(
             water_efficiency_score=70,
@@ -379,20 +379,20 @@ def placeholder_strategies() -> list[RotationStrategy]:
         ),
         explanation=RotationExplanation(
             why_suggested=(
-                "Terceira estratégia exigida pelo desafio: regeneração de solo, "
-                "cobertura de inverno e renda, ainda sem cálculo MCDA."
+                "Third strategy required by the challenge: soil regeneration, "
+                "winter cover and income—illustrative without full MCDA."
             ),
             supporting_evidence=[
-                "Valores ilustrativos do relatório de arquitetura, não derivados de uma série NASA deste talhão.",
+                "Illustrative values from the architecture report, not from a NASA series for this field.",
             ],
             expected_benefits=[
-                "Mantém o solo coberto no inverno e abre uma cultura de grão com mercado regional.",
+                "Keeps soil covered in winter and adds a grain crop with regional market.",
             ],
             information_gaps_and_uncertainty=[
-                "Produtividade de condado (NASS) e preço (AMS) ainda não foram consultados.",
+                "County yield (NASS) and price (AMS) were not queried.",
             ],
             risks_requiring_local_review=[
-                "Confirmar com o agrônomo local se o maquinário da fazenda cobre trigo e a leguminosa sugerida.",
+                "Confirm with a local agronomist whether farm machinery covers wheat and the suggested legume.",
             ],
         ),
     )

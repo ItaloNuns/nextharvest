@@ -39,7 +39,7 @@ def test_evidence_uses_real_precip_and_does_not_invent_satellite_metrics() -> No
     )
     explanation = explain_strategy(
         role="water",
-        sequence_label="Sorgo → Grão-de-Bico → Girassol",
+        sequence_label="Sorghum → Chickpea → Sunflower",
         current_crop="Alfafa",
         summary=_summary(),
         priorities=FarmerPriorities(
@@ -62,7 +62,7 @@ def test_evidence_uses_real_precip_and_does_not_invent_satellite_metrics() -> No
     assert "Dia loam" in evidence
     assert "NASS" in gaps
     assert "OpenET" not in blob
-    assert "ainda não entram" in evidence
+    assert "not included" in evidence.lower() or "not in this recommendation" in evidence.lower()
     assert "12.0 ha" in gaps
 
 
@@ -81,7 +81,7 @@ def test_evidence_cites_et_and_nass_when_present() -> None:
     )
     explanation = explain_strategy(
         role="water",
-        sequence_label="Sorgo",
+        sequence_label="Sorghum",
         current_crop="Alfafa",
         summary=summary,
         priorities=FarmerPriorities(
@@ -103,7 +103,7 @@ def test_evidence_cites_et_and_nass_when_present() -> None:
     assert "200.0 mm" in evidence
     assert "Churchill" in evidence
     assert "QuickStats" in evidence
-    assert "ainda não foram consultados" not in gaps
+    assert "were not queried" not in gaps
     assert "AMS" in gaps
 
 
@@ -127,7 +127,7 @@ def test_evidence_cites_power_gwetroot_not_smap() -> None:
     )
     explanation = explain_strategy(
         role="water",
-        sequence_label="Sorgo",
+        sequence_label="Sorghum",
         current_crop="Alfafa",
         summary=summary,
         priorities=FarmerPriorities(water_savings=5),
@@ -137,5 +137,5 @@ def test_evidence_cites_power_gwetroot_not_smap() -> None:
     evidence = " ".join(explanation.supporting_evidence)
     assert "GWETROOT" in evidence
     assert "January" in evidence
-    assert "não SMAP" in evidence
+    assert "not SMAP" in evidence
     assert "SMAP L4" not in evidence

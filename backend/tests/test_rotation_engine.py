@@ -45,7 +45,7 @@ def test_engine_returns_three_distinct_strategies() -> None:
     strategies = RotationEngine().recommend(_summary(), _priorities(), "Alfafa")
     assert len(strategies) == 3
     assert strategies[0].is_baseline is True
-    assert strategies[0].sequence[0] == "Alfafa"
+    assert strategies[0].sequence[0] == "Alfalfa"
     assert strategies[1].is_baseline is False
     assert strategies[2].is_baseline is False
     assert strategies[1].sequence != strategies[2].sequence

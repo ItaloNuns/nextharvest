@@ -8,12 +8,12 @@ from app.services.agronomic_rag import (
 def test_retrieve_prefers_legume_and_nitrogen_snippets() -> None:
     snippets = retrieve_agronomic_snippets(["alfalfa"], extra_tags=["nitrogen"])
     assert len(snippets) == 3
-    assert any("Leguminosas" in text for text in snippets)
+    assert any("Legumes" in text for text in snippets)
 
 
 def test_retrieve_prefers_drought_snippets_for_sorghum() -> None:
     snippets = retrieve_agronomic_snippets(["sorghum"], extra_tags=["drought", "water"])
-    assert any("FAO GAEZ" in text or "Sorgo" in text for text in snippets)
+    assert any("FAO GAEZ" in text or "Sorghum" in text for text in snippets)
 
 
 def test_extra_tags_mark_bare_and_drought() -> None:

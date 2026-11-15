@@ -53,6 +53,18 @@ def test_simulate_after_analyze_changes_water_score(mock_nasa_usda) -> None:
         rec_water = recommend.json()["strategies"][0]["metrics_radar"]["water_efficiency_score"]
         sim_water = body["strategies"][0]["metrics_radar"]["water_efficiency_score"]
         assert sim_water <= rec_water
+        assert "NASA" in body["message"] or "recalculated" in body["message"].lower()
+        explain = body["strategies"][0]["explanation"]
+        blob = " ".join(
+            [
+                explain["why_suggested"],
+                *explain["supporting_evidence"],
+                *explain["information_gaps_and_uncertainty"],
+            ]
+        )
+        assert "NASA POWER" in blob
+        assert "talhão" not in blob.lower()
+        assert "não" not in blob.lower()
 
         latest = client.get(f"/api/v1/fields/{field_id}/simulations/latest", headers=headers)
         assert latest.status_code == 200, latest.text
