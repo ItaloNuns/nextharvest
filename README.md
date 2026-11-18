@@ -202,17 +202,4 @@ Route reference: [backend/API_ROTAS.md](backend/API_ROTAS.md). Responses use **E
 
 Python 3.12+, FastAPI, PostgreSQL/PostGIS, Flutter, Riverpod, Dio — automated tests in `backend/tests/`.
 
----
-
-## Before you submit (maintainers)
-
-- [ ] Confirm repository visibility is **Public**
-- [ ] Replace or verify the GitHub URL above matches your canonical remote
-- [ ] Add the **project demo** link under [Project link](#project-link-public) (≤7 slides or ≤30s video)
-- [ ] Ensure `.env` files are gitignored; only `.env.example` is tracked
-- [ ] Run `pytest` in `backend/` and fix any failures
-- [ ] Re-read the [challenge mapping](#how-this-maps-to-the-challenge) table for overclaims (Sentinel, satellite SMAP)
-- [ ] README mobile flow matches your submission **screenshots/GIF**
-- [ ] After re-**analyze**, confirm `/docs` responses show **English** `message` and `health` labels
-
 *Last updated: November 2026.*
